@@ -1,0 +1,64 @@
+{
+	"$schema": "https://biomejs.dev/schemas/2.6.4/schema.json",
+	"vcs": {
+		"enabled": true,
+		"clientKind": "git",
+		"useIgnoreFile": true
+	},
+	"files": {
+		"ignoreUnknown": false,
+		"includes": ["**", "!docs"]
+	},
+	"formatter": {
+		"enabled": true,
+		"indentStyle": "tab"
+	},
+	"linter": {
+		"enabled": true,
+		"rules": {
+			"preset": "recommended"
+		}
+	},
+	"javascript": {
+		"formatter": {
+			"quoteStyle": "double"
+		}
+	},
+	"assist": {
+		"enabled": true,
+		"actions": {
+			"source": {
+				"organizeImports": "on"
+			}
+		}
+	},
+	"html": {
+		"experimentalFullSupportEnabled": true
+	},
+	"overrides": [
+		{
+			"includes": ["src/geometry/**", "src/units/**", "src/catalog/**"],
+			"linter": {
+				"rules": {
+					"style": {
+						"noRestrictedImports": {
+							"level": "error",
+							"options": {
+								"paths": {
+									"three": "Pure modules must not depend on the 3D layer.",
+									"astro": "Pure modules must not depend on Astro."
+								},
+								"patterns": [
+									{
+										"group": ["three/*", "astro:*", "../i18n/*", "../i18n"],
+										"message": "Pure modules must stay independent of rendering and i18n."
+									}
+								]
+							}
+						}
+					}
+				}
+			}
+		}
+	]
+}
