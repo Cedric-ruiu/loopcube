@@ -1,0 +1,371 @@
+/* Fabrication plan: A4 sheets, black on white, sized in mm for print. */
+.lc-plan {
+	display: none;
+}
+
+@media print {
+	@page {
+		size: A4 portrait;
+		margin: 0;
+	}
+	:root:has(body.lc-plan-ready) {
+		color-scheme: light;
+	}
+	body.lc-plan-ready {
+		max-width: none;
+		margin: 0;
+		padding: 0;
+		color: #000;
+		background: #fff;
+	}
+	body.lc-plan-ready > :not(.lc-plan) {
+		display: none;
+	}
+	body.lc-plan-ready > .lc-plan {
+		display: block;
+	}
+}
+
+.lc-page {
+	position: relative;
+	width: 210mm;
+	height: 297mm;
+	overflow: hidden;
+	break-after: page;
+	color: #000;
+	background: #fff;
+	font:
+		2.8mm / 1.25 Arial,
+		Helvetica,
+		sans-serif;
+	print-color-adjust: exact;
+}
+.lc-page:last-child {
+	break-after: auto;
+}
+.lc-frame {
+	position: absolute;
+	left: 20mm;
+	top: 10mm;
+	width: 180mm;
+	height: 277mm;
+	box-sizing: border-box;
+	border: 0.5mm solid #000;
+}
+.lc-body {
+	position: absolute;
+	left: 24mm;
+	top: 14mm;
+	width: 172mm;
+	height: 239mm;
+	display: flex;
+	flex-direction: column;
+	gap: 4mm;
+}
+
+.lc-drawing {
+	display: block;
+	overflow: visible;
+	fill: none;
+	stroke: #000;
+	stroke-linecap: round;
+	stroke-linejoin: round;
+}
+.lc-drawing text {
+	fill: #000;
+	stroke: none;
+	font-family: Arial, Helvetica, sans-serif;
+}
+.lc-drawing .thick {
+	stroke-width: 0.5;
+}
+.lc-drawing .thin {
+	stroke-width: 0.25;
+}
+.lc-drawing .hidden {
+	stroke-width: 0.25;
+	stroke-dasharray: 1.5 0.75;
+	stroke-linecap: butt;
+}
+.lc-drawing .center {
+	stroke-width: 0.18;
+	stroke-dasharray: 6 1 0.5 1;
+	stroke-linecap: butt;
+}
+.lc-drawing .weld {
+	stroke-width: 0.5;
+}
+.lc-drawing .fill {
+	fill: #000;
+	stroke: none;
+}
+.lc-drawing .balloon {
+	fill: #fff;
+}
+.lc-drawing .tube-o {
+	stroke: #000;
+	stroke-linecap: butt;
+}
+.lc-drawing .tube-i {
+	stroke: #fff;
+	stroke-linecap: butt;
+}
+.lc-drawing .tube-disc {
+	fill: #fff;
+	stroke: none;
+}
+.lc-drawing rect.thick {
+	fill: #fff;
+}
+.lc-drawing .lc-bend {
+	fill: #fff;
+	stroke: #000;
+	stroke-width: 0.18;
+	stroke-dasharray: 0.6 0.6;
+}
+
+.lc-page h2 {
+	display: flex;
+	justify-content: space-between;
+	gap: 4mm;
+	margin: 0 0 1.5mm;
+	font-size: 3.5mm;
+	border-bottom: 0.25mm solid #000;
+}
+.lc-page h2 span {
+	font-weight: 400;
+}
+.lc-page h3 {
+	margin: 3mm 0 1mm;
+	font-size: 3mm;
+}
+.lc-page table {
+	width: 100%;
+	border-collapse: collapse;
+}
+.lc-page th,
+.lc-page td {
+	padding: 1mm 1.5mm;
+	text-align: left;
+	vertical-align: top;
+	border: 0.25mm solid #000;
+}
+.lc-page th {
+	font-weight: 700;
+}
+.lc-page td.c,
+.lc-page th.c {
+	text-align: center;
+}
+.lc-page td.r {
+	text-align: right;
+	white-space: nowrap;
+}
+.lc-page tfoot td {
+	font-weight: 700;
+}
+.lc-page tfoot small {
+	display: block;
+	font-weight: 400;
+}
+.lc-page caption {
+	margin-bottom: 1mm;
+	font-weight: 700;
+	text-align: left;
+}
+.lc-page ol {
+	margin: 0;
+	padding-left: 5mm;
+}
+.lc-page li + li {
+	margin-top: 1mm;
+}
+
+.lc-card {
+	flex: none;
+	box-sizing: border-box;
+	overflow: hidden;
+}
+.lc-facts {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 0 6mm;
+	margin: 1.5mm 0 0;
+}
+.lc-facts div {
+	display: flex;
+	justify-content: space-between;
+	gap: 3mm;
+	padding: 0.6mm 0;
+	border-bottom: 0.18mm solid #000;
+}
+.lc-facts dt,
+.lc-facts dd {
+	margin: 0;
+}
+.lc-facts dd {
+	font-weight: 700;
+	text-align: right;
+}
+.lc-note {
+	margin: 1.5mm 0 0;
+	font-size: 2.5mm;
+}
+.lc-tables {
+	display: grid;
+	grid-template-columns: 3fr 2fr;
+	align-items: start;
+	gap: 6mm;
+	margin-top: 2mm;
+}
+
+.lc-check {
+	position: absolute;
+	left: 4mm;
+}
+
+.lc-credit {
+	position: absolute;
+	right: 10mm;
+	top: 288mm;
+	font-size: 2.2mm;
+}
+.lc-credit a {
+	color: inherit;
+	text-decoration: none;
+}
+
+.lc-block {
+	position: absolute;
+	left: 20mm;
+	top: 257mm;
+	width: 180mm;
+	height: 30mm;
+	box-sizing: border-box;
+	display: grid;
+	grid-template-columns: 60mm 30mm 30mm 30mm 30mm;
+	grid-template-rows: 11mm 9.5mm 9.5mm;
+	border: 0.5mm solid #000;
+}
+.lc-block > div {
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	min-width: 0;
+	padding: 0 1.5mm;
+	border: 0.18mm solid #000;
+}
+.lc-block > div > span {
+	font-size: 2mm;
+}
+.lc-block b {
+	font-size: 2.6mm;
+	overflow-wrap: anywhere;
+}
+.lc-block .t-title {
+	grid-area: 1 / 1 / 3 / 2;
+}
+.lc-block .t-title b {
+	font-size: 3.6mm;
+}
+.lc-block .t-title span {
+	font-size: 2.8mm;
+}
+.lc-block .t-title em {
+	font-style: normal;
+	font-weight: 700;
+	font-size: 3mm;
+}
+.lc-block .t-params {
+	grid-area: 1 / 2 / 2 / 6;
+}
+.lc-block .t-params b {
+	font-size: 2.4mm;
+}
+.lc-block .t-page {
+	grid-area: 2 / 5 / 4 / 6;
+}
+.lc-block .t-page b {
+	font-size: 5mm;
+}
+.lc-block .t-std {
+	grid-area: 3 / 1 / 4 / 2;
+}
+.lc-block .t-tol {
+	grid-area: 3 / 2 / 4 / 4;
+}
+.lc-block .t-date {
+	grid-area: 2 / 2 / 3 / 3;
+}
+.lc-block .t-unit {
+	grid-area: 2 / 3 / 3 / 4;
+}
+.lc-block .t-scale {
+	grid-area: 2 / 4 / 3 / 5;
+}
+.lc-block .t-proj {
+	grid-area: 3 / 4 / 4 / 5;
+}
+.lc-block .t-proj b {
+	display: flex;
+	align-items: center;
+	gap: 1mm;
+	font-size: 2.2mm;
+}
+.lc-block .t-proj svg {
+	flex: none;
+	fill: none;
+	stroke: #000;
+}
+.lc-block .t-proj .thick {
+	stroke-width: 0.35;
+}
+.lc-block .t-proj .center {
+	stroke-width: 0.15;
+	stroke-dasharray: 1.6 0.4 0.3 0.4;
+}
+
+.lc-overview {
+	position: relative;
+	height: 239mm;
+}
+.lc-overview > svg.lc-drawing {
+	position: absolute;
+	inset: 0;
+}
+.lc-sequence {
+	position: absolute;
+	box-sizing: border-box;
+	padding: 2mm 0 0 3mm;
+}
+.lc-sequence h3 {
+	margin-top: 0;
+}
+.lc-sequence p {
+	margin: 0 0 1.5mm;
+}
+.lc-chain {
+	font-weight: 700;
+	line-height: 1.5;
+}
+.lc-nowrap {
+	white-space: nowrap;
+}
+.lc-drawing .lc-light .thick,
+.lc-drawing .lc-light .weld {
+	stroke-width: 0.35;
+}
+.lc-split {
+	display: flex;
+	align-items: flex-start;
+	gap: 6mm;
+	margin-top: 1.5mm;
+}
+.lc-split .lc-facts {
+	flex: 1;
+	grid-template-columns: 1fr;
+	margin: 0;
+}
+.lc-split > svg.lc-drawing {
+	flex: none;
+}
