@@ -1,0 +1,86 @@
+---
+import Logo from "../components/Logo.astro";
+import { fallbackLocale, localePath, locales, rootPath, t } from "../i18n";
+import Base from "../layouts/Base.astro";
+
+const title = `LoopCube — ${locales.map((l) => t(l).root.tagline).join(" · ")}`;
+const description = locales.map((l) => `${t(l).root.tagline}.`).join(" ");
+const paths = Object.fromEntries(locales.map((l) => [l, localePath(l)]));
+---
+
+<Base lang={fallbackLocale} title={title} description={description} path={rootPath()}>
+	<script is:inline slot="head" define:vars={{ locales, paths, fallbackLocale }}>
+		let lang = null;
+		try {
+			lang = localStorage.getItem("loopcube:lang");
+		} catch {}
+		if (!locales.includes(lang)) {
+			const preferred = navigator.languages?.length ? navigator.languages : [navigator.language];
+			lang =
+				preferred.map((l) => l.slice(0, 2).toLowerCase()).find((l) => locales.includes(l)) ??
+				fallbackLocale;
+		}
+		location.replace(paths[lang]);
+	</script>
+	<main class="container choose">
+		<h1><span class="visually-hidden">LoopCube</span><Logo height={56} /></h1>
+		<ul>
+			{
+				locales.map((l) => (
+					<li lang={l}>
+						<a href={localePath(l)} hreflang={l} data-lang={l}>
+							<strong>{t(l).langName}</strong>
+							<span>{t(l).root.tagline}</span>
+						</a>
+					</li>
+				))
+			}
+		</ul>
+	</main>
+</Base>
+
+<style>
+	.choose {
+		display: grid;
+		align-content: center;
+		gap: var(--space-2xl);
+		min-height: 100svh;
+		padding-block: var(--space-2xl);
+	}
+	ul {
+		max-width: 40rem;
+		margin: 0;
+		padding: 0;
+		list-style: none;
+		border-top: 1px solid var(--color-rule);
+	}
+	li {
+		border-bottom: 1px solid var(--color-rule);
+	}
+	a {
+		display: grid;
+		gap: var(--space-2xs);
+		padding: var(--space-lg) var(--space-sm);
+		margin-inline: calc(-1 * var(--space-sm));
+		border-radius: var(--radius-input);
+		text-decoration: none;
+		transition: background-color var(--dur-short) var(--ease-out);
+	}
+	a:hover {
+		background: var(--color-paper-2);
+	}
+	a:active {
+		background: var(--color-paper-3);
+	}
+	a:focus-visible {
+		outline: 2px solid var(--color-focus);
+		outline-offset: 2px;
+	}
+	strong {
+		font: var(--display-weight) var(--text-2xl) / 1.1 var(--font-display);
+		letter-spacing: var(--tracking-display);
+	}
+	span:not(.visually-hidden) {
+		color: var(--color-ink-2);
+	}
+</style>

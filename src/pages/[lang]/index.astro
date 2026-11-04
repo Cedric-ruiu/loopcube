@@ -1,0 +1,438 @@
+---
+import { Picture } from "astro:assets";
+import type { GetStaticPaths, InferGetStaticPropsType } from "astro";
+import en1 from "../../assets/plan/en-1.png";
+import en2 from "../../assets/plan/en-2.png";
+import en3 from "../../assets/plan/en-3.png";
+import fr1 from "../../assets/plan/fr-1.png";
+import fr2 from "../../assets/plan/fr-2.png";
+import fr3 from "../../assets/plan/fr-3.png";
+import Configurator from "../../components/Configurator.astro";
+import SiteFooter from "../../components/SiteFooter.astro";
+import SiteHeader from "../../components/SiteHeader.astro";
+import { type Locale, localePath, locales, ogImagePath, t } from "../../i18n";
+import Base from "../../layouts/Base.astro";
+
+export const getStaticPaths = (() =>
+	locales.map((locale) => ({
+		params: { lang: locale },
+		props: { locale },
+	}))) satisfies GetStaticPaths;
+
+type Props = InferGetStaticPropsType<typeof getStaticPaths>;
+
+const sheetImages: Record<Locale, ImageMetadata[]> = {
+	fr: [fr1, fr2, fr3],
+	en: [en1, en2, en3],
+};
+
+const { locale } = Astro.props;
+const m = t(locale);
+const home = m.home;
+const path = localePath(locale);
+const jsonLd = {
+	"@context": "https://schema.org",
+	"@type": "WebApplication",
+	name: "LoopCube",
+	url: new URL(path, Astro.site).href,
+	description: m.meta.description,
+	inLanguage: locale,
+	image: new URL(ogImagePath(), Astro.site).href,
+	author: {
+		"@type": "Person",
+		name: "Cédric Ruiu",
+		url: "https://github.com/Cedric-ruiu",
+	},
+	applicationCategory: "DesignApplication",
+	operatingSystem: "Any",
+	isAccessibleForFree: true,
+	license: "https://opensource.org/licenses/MIT",
+	offers: { "@type": "Offer", price: "0", priceCurrency: "EUR" },
+};
+---
+
+<Base lang={locale} title={m.meta.title} description={m.meta.description} path={path} locale={locale}>
+	<script
+		slot="head"
+		type="application/ld+json"
+		set:html={JSON.stringify(jsonLd).replaceAll("<", "\\u003c")}
+	/>
+	<SiteHeader locale={locale} />
+	<main>
+		<section class="bench" id={home.anchor} aria-labelledby="bench-title">
+			<div class="container">
+				<div class="bench__head">
+					<h1 id="bench-title">{home.h1}</h1>
+					<p class="lead">{home.lead}</p>
+				</div>
+				<Configurator locale={locale} />
+			</div>
+		</section>
+
+		<section class="plan" aria-labelledby="plan-title">
+			<div class="container">
+				<div class="plan__head">
+					<h2 id="plan-title">{home.plan.title}</h2>
+					<p>{home.plan.text}</p>
+				</div>
+				<ol class="sheets" aria-labelledby="plan-title">
+					{
+						home.plan.sheets.map((sheet, index) => (
+							<li>
+								<figure>
+									<div class="sheet">
+										<Picture
+											src={sheetImages[locale][index] as ImageMetadata}
+											formats={["avif"]}
+											fallbackFormat="webp"
+											widths={[320, 480, 640, 840, 1240]}
+											sizes="(min-width: 90rem) 26rem, (min-width: 48rem) 30vw, 78vw"
+											alt={sheet.alt}
+											loading="lazy"
+											decoding="async"
+										/>
+									</div>
+									<figcaption>
+										<strong>{sheet.title}</strong>
+										<span>{sheet.text}</span>
+									</figcaption>
+								</figure>
+							</li>
+						))
+					}
+				</ol>
+			</div>
+		</section>
+
+		<section class="line" aria-labelledby="line-title">
+			<div class="container">
+				<div class="line__head">
+					<h2 id="line-title">{home.line.title}</h2>
+					<p>{home.line.text}</p>
+				</div>
+				<dl class="figures">
+					{
+						home.line.figures.map((figure) => (
+							<div>
+								<dt>{figure.label}</dt>
+								<dd>{figure.value}</dd>
+							</div>
+						))
+					}
+				</dl>
+				<p class="line__note">{home.line.note}</p>
+			</div>
+		</section>
+
+		<section class="steps" aria-labelledby="steps-title">
+			<div class="container steps__grid">
+				<h2 id="steps-title">{home.steps.title}</h2>
+				<ol class="steps__list">
+					{
+						home.steps.items.map((item) => (
+							<li>
+								<h3>{item.title}</h3>
+								<p>{item.text}</p>
+							</li>
+						))
+					}
+				</ol>
+			</div>
+		</section>
+
+		<section class="trades" aria-labelledby="trades-title">
+			<div class="container trades__grid">
+				<h2 id="trades-title">{home.trades.title}</h2>
+				<div class="trades__body">
+					<p class="trades__text">{home.trades.text}</p>
+					<p class="trades__audience">{home.trades.audience}</p>
+				</div>
+				<a class="btn btn--band" href={`#${home.anchor}`}>{home.trades.action}</a>
+			</div>
+		</section>
+	</main>
+	<SiteFooter locale={locale} />
+</Base>
+
+<style>
+	.bench {
+		padding-block: var(--space-md) var(--space-2xl);
+	}
+	.bench__head {
+		display: grid;
+		gap: var(--space-sm);
+		margin-bottom: var(--space-lg);
+	}
+	.bench h1 {
+		max-width: 36ch;
+		font-size: var(--text-display-s);
+		text-wrap: balance;
+	}
+	.bench .lead {
+		color: var(--color-ink-2);
+	}
+
+	.plan {
+		padding-block: var(--section-gap-s);
+		background: var(--color-paper-2);
+	}
+	.plan__head {
+		display: grid;
+		gap: var(--space-md) var(--gap-columns);
+		margin-bottom: var(--space-2xl);
+	}
+	.plan__head p {
+		max-width: 60ch;
+		color: var(--color-ink-2);
+	}
+	.sheets {
+		display: grid;
+		grid-auto-flow: column;
+		grid-auto-columns: minmax(15rem, 78%);
+		gap: var(--gap-columns);
+		margin: 0 calc(-1 * var(--gutter));
+		padding: 0 var(--gutter) var(--space-xs);
+		list-style: none;
+		overflow-x: auto;
+		overscroll-behavior-x: contain;
+		scroll-snap-type: x mandatory;
+		scroll-padding-inline: var(--gutter);
+		border-radius: var(--radius-input);
+	}
+	.sheets > li {
+		scroll-snap-align: start;
+		min-width: 0;
+	}
+	.sheets figure {
+		margin: 0;
+	}
+	.sheet {
+		aspect-ratio: 210 / 297;
+		overflow: hidden;
+		border-radius: 2px;
+		background: var(--color-paper);
+		outline: 1px solid var(--color-rule);
+		outline-offset: -1px;
+	}
+	.sheet :global(img) {
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+	}
+	.sheets figcaption {
+		display: grid;
+		gap: var(--space-2xs);
+		margin-top: var(--space-md);
+	}
+	.sheets figcaption strong {
+		font: var(--display-weight) var(--text-lg) / 1.2 var(--font-display);
+	}
+	.sheets figcaption span {
+		max-width: 40ch;
+		font-size: var(--text-ui);
+		color: var(--color-ink-2);
+	}
+
+	.line {
+		padding-top: var(--section-gap);
+	}
+	.line__head {
+		display: grid;
+		gap: var(--space-lg) var(--gap-columns);
+	}
+	.line__head p {
+		color: var(--color-ink-2);
+	}
+	.figures {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		margin: var(--space-2xl) 0 0;
+		border-top: 1px solid var(--color-rule);
+	}
+	.figures > div {
+		display: flex;
+		flex-direction: column-reverse;
+		justify-content: flex-end;
+		gap: var(--space-xs);
+		padding: var(--space-lg) 0 var(--space-lg) var(--space-lg);
+		border-left: 1px solid var(--color-rule);
+	}
+	.figures > div:nth-child(odd) {
+		padding-left: 0;
+		border-left: 0;
+	}
+	.figures > div:nth-child(n + 3) {
+		border-top: 1px solid var(--color-rule);
+	}
+	.figures dd {
+		margin: 0;
+		font: var(--display-weight) var(--text-display) / 1 var(--font-display);
+		font-variant-numeric: tabular-nums;
+		letter-spacing: var(--tracking-display);
+	}
+	.figures dt {
+		color: var(--color-ink-2);
+	}
+	.line__note {
+		max-width: 60ch;
+		margin-top: var(--space-md);
+		font-size: var(--text-ui);
+		color: var(--color-muted);
+	}
+
+	.steps {
+		padding-block: var(--section-gap-l) var(--section-gap);
+	}
+	.steps__grid {
+		display: grid;
+		gap: var(--space-xl) var(--gap-columns);
+		align-items: start;
+	}
+	.steps__list {
+		margin: 0;
+		padding: 0;
+		list-style: none;
+		counter-reset: step;
+		border-top: 1px solid var(--color-rule);
+	}
+	.steps__list li {
+		counter-increment: step;
+		display: grid;
+		grid-template-columns: 2.5rem minmax(0, 1fr);
+		gap: var(--space-xs) var(--space-md);
+		align-items: baseline;
+		padding-block: var(--space-lg);
+		border-bottom: 1px solid var(--color-rule);
+	}
+	.steps__list li::before {
+		content: counter(step);
+		grid-row: span 2;
+		font: var(--display-weight) var(--text-2xl) / 1 var(--font-display);
+		font-variant-numeric: tabular-nums;
+		color: var(--color-accent-text);
+	}
+	.steps__list p {
+		grid-column: 2;
+		color: var(--color-ink-2);
+	}
+
+	.trades {
+		padding-block: var(--section-gap-s);
+		background: var(--color-band);
+		color: var(--color-band-ink);
+	}
+	.trades__grid {
+		display: grid;
+		gap: var(--space-xl) var(--gap-columns);
+		align-items: end;
+	}
+	.trades h2 {
+		max-width: 18ch;
+		font-size: var(--text-display);
+		text-wrap: balance;
+		color: var(--color-band-ink);
+	}
+	.trades__body {
+		display: grid;
+		gap: var(--space-md);
+	}
+	.trades__text {
+		max-width: 46ch;
+		font-size: var(--text-lead);
+		line-height: 1.45;
+	}
+	.trades__audience {
+		max-width: 60ch;
+		color: var(--color-band-muted);
+	}
+	.trades .btn {
+		justify-self: start;
+	}
+	.btn--band {
+		background: transparent;
+		border-color: var(--color-band-ink);
+		color: var(--color-band-ink);
+	}
+	.btn--band:hover {
+		background: color-mix(in oklab, var(--color-band-ink) 12%, transparent);
+		border-color: var(--color-band-ink);
+	}
+
+	@media (min-width: 48rem) {
+		.sheets {
+			grid-auto-flow: row;
+			grid-template-columns: repeat(3, minmax(0, 1fr));
+			margin: 0;
+			padding: 0;
+			overflow: visible;
+		}
+		.figures {
+			grid-template-columns: repeat(4, minmax(0, 1fr));
+		}
+		.figures > div:nth-child(n) {
+			padding-left: var(--space-lg);
+			border-left: 1px solid var(--color-rule);
+			border-top: 0;
+		}
+		.figures > div:first-child {
+			padding-left: 0;
+			border-left: 0;
+		}
+		.steps__list li {
+			grid-template-columns: 3.5rem minmax(0, 5fr) minmax(0, 7fr);
+			column-gap: var(--space-lg);
+			padding-block: var(--space-xl);
+		}
+		.steps__list li::before {
+			grid-row: auto;
+		}
+		.steps__list p {
+			grid-column: 3;
+		}
+	}
+
+	@media (min-width: 64rem) {
+		.plan__head,
+		.line__head,
+		.steps__grid,
+		.trades__grid {
+			grid-template-columns: repeat(12, minmax(0, 1fr));
+		}
+		.plan__head {
+			align-items: end;
+		}
+		.plan__head h2 {
+			grid-column: 1 / 7;
+		}
+		.plan__head p {
+			grid-column: 8 / 13;
+		}
+		.line__head {
+			align-items: start;
+		}
+		.line__head h2 {
+			grid-column: 1 / 6;
+		}
+		.line__head p {
+			grid-column: 7 / 13;
+		}
+		.steps__grid h2 {
+			grid-column: 1 / 5;
+			position: sticky;
+			top: var(--space-xl);
+		}
+		.steps__list {
+			grid-column: 5 / 13;
+		}
+		.trades h2 {
+			grid-column: 1 / 11;
+		}
+		.trades__body {
+			grid-column: 1 / 8;
+		}
+		.trades .btn {
+			grid-column: 9 / 13;
+			justify-self: end;
+		}
+	}
+</style>

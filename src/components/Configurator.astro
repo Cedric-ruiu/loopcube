@@ -1,0 +1,576 @@
+---
+import type { ClientConfig } from "../app/main";
+import { FIELDS } from "../app/settings";
+import { defaultUnit, type Locale, t } from "../i18n";
+import "../plan/plan.css";
+
+interface Props {
+	locale: Locale;
+}
+
+const { locale } = Astro.props;
+const m = t(locale);
+const unit = defaultUnit(locale);
+const config: ClientConfig = {
+	locale,
+	unit,
+	messages: {
+		ui: m.ui,
+		params: m.params,
+		issues: m.issues,
+		limits: m.limits,
+		viewer: m.viewer,
+		parts: m.parts,
+		plan: m.plan,
+	},
+};
+const units = Object.entries(m.ui.units);
+const shapes = Object.entries(m.ui.shapes);
+const joints = Object.entries(m.ui.joints);
+---
+
+<div class="app">
+	<section class="viewer" aria-label={m.viewer.label}>
+		<div class="tools">
+			<label class="toggle"><input type="checkbox" id="lc-colors" autocomplete="off" checked /> {m.viewer.colors}</label>
+			<label class="toggle"><input type="checkbox" id="lc-human" autocomplete="off" checked /> {m.viewer.human}</label>
+			<label class="toggle">
+				{m.viewer.marks}
+				<select id="lc-marks" autocomplete="off">
+					{Object.entries(m.viewer.markDisplays).map(([value, label]) => <option value={value}>{label}</option>)}
+				</select>
+			</label>
+			<button type="button" class="btn print" id="lc-print">
+				<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+					<path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
+					<path d="M6 9V3a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v6" />
+					<rect x="6" y="14" width="12" height="8" rx="1" />
+				</svg>
+				{m.plan.button}
+			</button>
+		</div>
+		<div class="stage" id="lc-stage" title={m.viewer.help}>
+			<p class="status" id="lc-status">{m.viewer.loading}</p>
+			<ul class="legend" id="lc-legend" aria-label={m.viewer.legend} hidden></ul>
+			<button type="button" class="btn btn--quiet diagonal" id="lc-diagonal" disabled>{m.viewer.diagonal}</button>
+		</div>
+	</section>
+
+	<form class="params" id="lc-params" novalidate>
+		<div class="params-head">
+			<h2>{m.ui.settings}</h2>
+			<fieldset class="choice">
+				<legend class="sr-only">{m.ui.unit}</legend>
+				<div class="seg">
+					{
+						units.map(([value, label]) => (
+							<label>
+								<input type="radio" name="unit" value={value} checked={value === unit} />
+								{label}
+							</label>
+						))
+					}
+				</div>
+			</fieldset>
+		</div>
+
+		<fieldset class="choice">
+			<legend>{m.ui.profile}</legend>
+			<div class="seg">
+				{
+					shapes.map(([value, label]) => (
+						<label>
+							<input type="radio" name="shape" value={value} checked={value === "square"} />
+							{label}
+						</label>
+					))
+				}
+			</div>
+			<p class="msg" id="lc-shape-hint" aria-live="polite"></p>
+		</fieldset>
+
+		<div class="field">
+			<label for="lc-section">{m.ui.section}</label>
+			<select id="lc-section" aria-describedby="lc-section-hint"></select>
+			<p class="msg" id="lc-section-hint" aria-live="polite"></p>
+		</div>
+
+		{
+			FIELDS.map((p) => (
+				<>
+					{p === "bendRadius" && (
+						<fieldset class="choice" data-round hidden>
+							<legend>{m.ui.joint}</legend>
+							<div class="seg">
+								{joints.map(([value, label]) => (
+									<label>
+										<input type="radio" name="joint" value={value} checked={value === "elbow"} />
+										{label}
+									</label>
+								))}
+							</div>
+							<p class="msg" id="lc-joint-hint" aria-live="polite" />
+						</fieldset>
+					)}
+					<div class="field" data-round={p === "bendRadius" ? "" : undefined} hidden={p === "bendRadius"}>
+						<div class="field-head">
+							<label for={`lc-${p}`} id={`lc-${p}-label`}>
+								{p === "width" ? m.ui.width.square : m.params[p]}
+							</label>
+							<span class="box">
+								<input
+									type="text"
+									name="value"
+									id={`lc-${p}`}
+									data-param={p}
+									inputmode="decimal"
+									autocomplete="off"
+									spellcheck="false"
+									aria-describedby={`lc-${p}-msg`}
+								/>
+								<span class="suffix" id={`lc-${p}-suffix`} aria-hidden="true">{unit}</span>
+							</span>
+						</div>
+						<input
+							type="range"
+							name="slider"
+							id={`lc-${p}-range`}
+							data-param={p}
+							aria-labelledby={`lc-${p}-label`}
+							autocomplete="off"
+						/>
+						{(p === "gap" || p === "bendRadius") && (
+							<label class="auto">
+								<input type="checkbox" name="auto" id={`lc-${p}-auto`} data-param={p} autocomplete="off" />
+								<span id={`lc-${p}-auto-label`}>{p === "gap" ? m.ui.gapAuto.square : m.ui.radiusAuto}</span>
+							</label>
+						)}
+						<p class="msg" id={`lc-${p}-msg`} aria-live="polite"></p>
+					</div>
+				</>
+			))
+		}
+	</form>
+</div>
+
+<script
+	type="application/json"
+	id="lc-config"
+	set:html={JSON.stringify(config).replaceAll("<", "\\u003c")}
+/>
+<script>
+	import { start } from "../app/main";
+
+	start();
+</script>
+
+<style>
+	:global(html) {
+		--stage-height: clamp(14rem, 42svh, 30rem);
+		/* Keeps focused fields clear of the sticky viewer */
+		scroll-padding-top: calc(var(--stage-height) + 6rem);
+	}
+	.app {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr);
+		gap: var(--space-lg);
+	}
+
+	.viewer {
+		position: sticky;
+		top: 0;
+		z-index: var(--z-sticky);
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-xs);
+		margin-inline: calc(-1 * var(--gutter));
+		padding: var(--space-xs) var(--gutter);
+		background: var(--color-paper);
+		border-bottom: 1px solid var(--color-rule);
+	}
+	.tools {
+		order: 1;
+		display: flex;
+		flex-wrap: nowrap;
+		align-items: center;
+		gap: var(--space-xs) var(--space-lg);
+		margin-inline: calc(-1 * var(--gutter));
+		padding-inline: var(--gutter);
+		overflow-x: auto;
+		scrollbar-width: none;
+		font-size: var(--text-ui);
+	}
+	.tools::-webkit-scrollbar {
+		display: none;
+	}
+	.print {
+		order: -1;
+		flex-shrink: 0;
+	}
+	.toggle,
+	.auto {
+		display: inline-flex;
+		align-items: center;
+		gap: var(--space-xs);
+		min-height: 44px;
+		flex-shrink: 0;
+		white-space: nowrap;
+		cursor: pointer;
+	}
+	input[type="checkbox"] {
+		width: 1.25rem;
+		height: 1.25rem;
+		margin: 0;
+		flex-shrink: 0;
+		accent-color: var(--color-control);
+		cursor: pointer;
+	}
+	input[type="checkbox"]:disabled {
+		cursor: not-allowed;
+	}
+
+	.stage {
+		position: relative;
+		height: var(--stage-height);
+		overflow: hidden;
+		border-radius: var(--radius-card);
+		background: var(--color-paper-2);
+		container-type: inline-size;
+	}
+	.stage :global(.lc-canvas) {
+		position: absolute;
+		inset: 0;
+		width: 100%;
+		height: 100%;
+		display: block;
+		touch-action: none;
+		cursor: grab;
+	}
+	.stage :global(.lc-labels) {
+		position: absolute;
+		inset: 0;
+		pointer-events: none;
+	}
+	.status {
+		position: absolute;
+		inset: 0;
+		display: grid;
+		place-items: center;
+		margin: 0;
+		padding: var(--space-md);
+		text-align: center;
+		color: var(--color-muted);
+	}
+	.legend {
+		position: absolute;
+		top: var(--space-xs);
+		left: var(--space-xs);
+		z-index: var(--z-raised);
+		max-width: calc(100% - var(--space-md));
+		margin: 0;
+		padding: var(--space-2xs) var(--space-xs);
+		list-style: none;
+		font-size: var(--text-xs);
+		line-height: 1.45;
+		color: var(--color-ink);
+		border-radius: var(--radius-input);
+		background: color-mix(in oklab, var(--color-paper) 88%, transparent);
+		pointer-events: none;
+	}
+	.legend :global(li) {
+		display: flex;
+		align-items: center;
+		gap: var(--space-2xs);
+		white-space: nowrap;
+	}
+	.legend :global(.swatch) {
+		width: 0.75rem;
+		height: 0.75rem;
+		border-radius: 2px;
+		flex-shrink: 0;
+	}
+	.legend :global(.details) {
+		display: none;
+		color: var(--color-ink-2);
+	}
+	@container (min-width: 34rem) {
+		.legend :global(.details) {
+			display: inline;
+		}
+	}
+	.diagonal {
+		position: absolute;
+		right: var(--space-xs);
+		bottom: var(--space-xs);
+		z-index: var(--z-raised);
+		min-height: 44px;
+		padding-inline: var(--space-md);
+	}
+
+	.params {
+		display: grid;
+		align-content: start;
+		border: 1px solid var(--color-rule);
+		border-radius: var(--radius-card);
+		background: var(--color-paper);
+	}
+	.params > * {
+		padding: var(--space-sm) var(--space-lg);
+		border-top: 1px solid var(--color-rule);
+	}
+	.params > :first-child {
+		border-top: 0;
+	}
+	.params-head {
+		display: flex;
+		flex-wrap: wrap;
+		gap: var(--space-xs);
+		align-items: center;
+		justify-content: space-between;
+	}
+	.params-head h2 {
+		font-size: var(--text-xl);
+		text-wrap: balance;
+	}
+	fieldset {
+		min-width: 0;
+		margin: 0;
+		border: 0;
+	}
+	.params > fieldset {
+		padding: var(--space-sm) var(--space-lg);
+	}
+	.params-head fieldset {
+		padding: 0;
+	}
+	legend,
+	.field > label[for],
+	.field-head > label {
+		display: block;
+		padding: 0;
+		margin-bottom: var(--space-xs);
+		font-size: var(--text-ui);
+		font-weight: 600;
+	}
+	.field-head > label {
+		margin-bottom: 0;
+	}
+	/* Floated so the legend sits inside the fieldset padding, like the other labels */
+	legend:not(.sr-only) {
+		float: left;
+		width: 100%;
+	}
+	.sr-only {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		overflow: hidden;
+		clip-path: inset(50%);
+		white-space: nowrap;
+	}
+
+	.seg {
+		display: flex;
+		clear: both;
+		border: 1px solid var(--color-muted);
+		border-radius: var(--radius-input);
+		overflow: hidden;
+	}
+	.seg label {
+		position: relative;
+		flex: 1;
+		display: grid;
+		place-items: center;
+		min-height: 44px;
+		padding: var(--space-2xs) var(--space-sm);
+		text-align: center;
+		font-size: var(--text-ui);
+		cursor: pointer;
+		transition: background-color var(--dur-short) var(--ease-out), color var(--dur-short) var(--ease-out);
+	}
+	.seg label + label {
+		border-left: 1px solid var(--color-muted);
+	}
+	.seg input {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		opacity: 0;
+		pointer-events: none;
+	}
+	.seg label:hover {
+		background: var(--color-paper-2);
+	}
+	.seg label:active {
+		background: var(--color-paper-3);
+	}
+	.seg label:has(input:checked) {
+		color: var(--color-paper);
+		background: var(--color-ink);
+		font-weight: 600;
+	}
+	.seg label:has(input:focus-visible) {
+		outline: 2px solid var(--color-focus);
+		outline-offset: -4px;
+		z-index: var(--z-base);
+	}
+	.seg label:has(input:disabled) {
+		color: var(--color-muted);
+		background: var(--color-paper-2);
+		text-decoration: line-through;
+		cursor: not-allowed;
+	}
+	.params-head .seg label {
+		min-width: 4.5rem;
+	}
+
+	.field {
+		display: grid;
+		gap: var(--space-2xs);
+	}
+	.field-head {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: var(--space-sm);
+	}
+	.auto {
+		min-height: 32px;
+		justify-self: start;
+		font-size: var(--text-sm);
+		color: var(--color-ink-2);
+	}
+	.auto:has(input:disabled) {
+		color: var(--color-muted);
+		cursor: not-allowed;
+	}
+	input[type="range"] {
+		width: 100%;
+		min-width: 0;
+		height: 2rem;
+		margin: 0;
+		accent-color: var(--color-control);
+		cursor: pointer;
+	}
+	.box {
+		display: flex;
+		align-items: center;
+		flex-shrink: 0;
+		width: 7.5rem;
+		min-height: 44px;
+		border: 1px solid var(--color-muted);
+		border-radius: var(--radius-input);
+		background: var(--color-paper);
+	}
+	.box:hover {
+		border-color: var(--color-ink-2);
+	}
+	.box:focus-within {
+		outline: 2px solid var(--color-focus);
+		outline-offset: 1px;
+	}
+	.box:has([aria-invalid="true"]) {
+		border-color: var(--color-error);
+	}
+	.box input {
+		width: 100%;
+		min-width: 0;
+		min-height: 42px;
+		padding: 0 var(--space-2xs) 0 var(--space-xs);
+		font-size: var(--text-md);
+		font-variant-numeric: tabular-nums;
+		text-align: right;
+		color: var(--color-ink);
+		background: transparent;
+		border: 0;
+		outline: 0;
+	}
+	.suffix {
+		padding-right: var(--space-xs);
+		font-size: var(--text-sm);
+		color: var(--color-muted);
+	}
+	select {
+		width: 100%;
+		min-height: 44px;
+		padding: 0 var(--space-xs);
+		font-size: var(--text-md);
+		color: var(--color-ink);
+		background: var(--color-paper);
+		border: 1px solid var(--color-muted);
+		border-radius: var(--radius-input);
+		cursor: pointer;
+	}
+	select:hover {
+		border-color: var(--color-ink-2);
+	}
+	select:focus-visible {
+		outline: 2px solid var(--color-focus);
+		outline-offset: 1px;
+	}
+	.toggle select {
+		width: auto;
+	}
+	.msg {
+		margin: 0;
+		font-size: var(--text-sm);
+		color: var(--color-muted);
+	}
+	.msg:empty {
+		display: none;
+	}
+	.msg.error {
+		color: var(--color-error);
+	}
+
+	@media (pointer: coarse) {
+		input[type="range"] {
+			height: 2.75rem;
+		}
+		.auto {
+			min-height: 44px;
+		}
+	}
+
+	@media (min-width: 64rem) {
+		:global(html) {
+			--stage-height: clamp(24rem, 100svh - 22rem, 50rem);
+			scroll-padding-top: var(--space-xl);
+		}
+		.app {
+			grid-template-columns: minmax(0, 1fr) clamp(19rem, 28%, 25rem);
+			gap: var(--space-xl);
+			align-items: start;
+		}
+		.viewer {
+			top: var(--space-md);
+			gap: var(--space-sm);
+			margin: 0;
+			padding: 0;
+			background: none;
+			border: 0;
+		}
+		.tools {
+			order: 0;
+			flex-wrap: wrap;
+			margin: 0;
+			padding: 0;
+			overflow: visible;
+		}
+		.print {
+			order: 0;
+			margin-left: auto;
+		}
+	}
+</style>
+
+<style is:global>
+	.lc-mark {
+		padding: 0.0625rem 0.3125rem;
+		font: 600 0.75rem/1.2 var(--font-mark);
+		color: var(--color-mark-ink);
+		background: var(--color-mark-paper);
+		border: 1px solid var(--color-mark-edge);
+		border-radius: 0.25rem;
+	}
+</style>
