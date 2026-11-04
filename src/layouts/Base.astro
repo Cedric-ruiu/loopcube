@@ -1,0 +1,77 @@
+---
+import { Font } from "astro:assets";
+import LogoSymbol from "../components/LogoSymbol.astro";
+import {
+	fallbackLocale,
+	type Locale,
+	localePath,
+	locales,
+	ogImagePath,
+	ogLocale,
+	rootPath,
+	t,
+} from "../i18n";
+
+interface Props {
+	lang: string;
+	title: string;
+	description: string;
+	path: string;
+	/** Undefined on the language choice page (x-default) */
+	locale?: Locale | undefined;
+}
+
+const { lang, title, description, path, locale } = Astro.props;
+const absolute = (p: string) => new URL(p, Astro.site).href;
+const imageAlt = t(locale ?? fallbackLocale).meta.imageAlt;
+---
+
+<!doctype html>
+<html lang={lang}>
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>{title}</title>
+		<meta name="description" content={description} />
+		<Font cssVariable="--font-barlow" preload />
+		<link rel="canonical" href={absolute(path)} />
+		{locales.map((l) => <link rel="alternate" hreflang={l} href={absolute(localePath(l))} />)}
+		<link rel="alternate" hreflang="x-default" href={absolute(rootPath())} />
+		<link rel="icon" href={`${import.meta.env.BASE_URL}favicon.svg`} type="image/svg+xml" />
+		<meta property="og:type" content="website" />
+		<meta property="og:site_name" content="LoopCube" />
+		<meta property="og:title" content={title} />
+		<meta property="og:description" content={description} />
+		<meta property="og:url" content={absolute(path)} />
+		<meta property="og:image" content={absolute(ogImagePath())} />
+		<meta property="og:image:type" content="image/png" />
+		<meta property="og:image:width" content="1200" />
+		<meta property="og:image:height" content="630" />
+		<meta property="og:image:alt" content={imageAlt} />
+		<meta name="twitter:card" content="summary_large_image" />
+		{locale && <meta property="og:locale" content={ogLocale(locale)} />}
+		{
+			locales
+				.filter((l) => l !== locale)
+				.map((l) => <meta property="og:locale:alternate" content={ogLocale(l)} />)
+		}
+		<slot name="head" />
+	</head>
+	<body>
+		<LogoSymbol />
+		<slot />
+		<script is:inline>
+			document.addEventListener("click", (event) => {
+				const link = event.target instanceof Element && event.target.closest("a[data-lang]");
+				if (!link) return;
+				try {
+					localStorage.setItem("loopcube:lang", link.dataset.lang);
+				} catch {}
+			});
+		</script>
+	</body>
+</html>
+
+<style is:global>
+	@import url("../styles/site.css");
+</style>

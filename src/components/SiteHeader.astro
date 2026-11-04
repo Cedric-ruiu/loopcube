@@ -1,0 +1,22 @@
+---
+import { type Locale, localePath, t } from "../i18n";
+import LangSwitch from "./LangSwitch.astro";
+import Logo from "./Logo.astro";
+
+interface Props {
+	locale: Locale;
+}
+
+const { locale } = Astro.props;
+const m = t(locale);
+---
+
+<a class="skip" href={`#${m.home.anchor}`}>{m.nav.skip}</a>
+<header class="site-nav">
+	<div class="container site-nav__bar">
+		<a class="brand" href={localePath(locale)} aria-label={m.nav.home}>
+			<Logo height={32} />
+		</a>
+		<LangSwitch current={locale} />
+	</div>
+</header>

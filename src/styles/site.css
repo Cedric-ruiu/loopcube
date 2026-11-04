@@ -1,0 +1,112 @@
+@import url("./tokens.css");
+@import url("./base.css");
+
+.skip {
+	position: absolute;
+	left: var(--space-md);
+	top: calc(-1 * var(--space-3xl));
+	z-index: var(--z-toast);
+	padding: var(--space-xs) var(--space-md);
+	border-radius: var(--radius-input);
+	background: var(--color-ink);
+	color: var(--color-paper);
+	font-weight: 600;
+	text-decoration: none;
+}
+.skip:focus-visible {
+	top: var(--space-md);
+}
+
+.brand {
+	display: inline-flex;
+	align-items: center;
+	min-height: 44px;
+	border-radius: var(--radius-input);
+}
+.brand:focus-visible {
+	outline: 2px solid var(--color-focus);
+	outline-offset: 4px;
+}
+.logo {
+	width: auto;
+	flex-shrink: 0;
+}
+.sprite {
+	position: absolute;
+	width: 0;
+	height: 0;
+	overflow: hidden;
+}
+
+.site-nav__bar {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--space-md);
+	min-height: 72px;
+}
+
+.btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: var(--space-xs);
+	min-height: 48px;
+	padding: 0 var(--space-lg);
+	border: 1px solid var(--color-accent);
+	border-radius: var(--radius-input);
+	background: var(--color-accent);
+	color: var(--color-accent-ink);
+	font: var(--display-weight) 1.0625rem / 1 var(--font-display);
+	white-space: nowrap;
+	text-decoration: none;
+	cursor: pointer;
+	transition:
+		background-color var(--dur-short) var(--ease-out),
+		border-color var(--dur-short) var(--ease-out),
+		transform var(--dur-micro) var(--ease-out);
+}
+.btn:hover {
+	background: var(--color-accent-2);
+	border-color: var(--color-accent-2);
+}
+.btn:active {
+	transform: translateY(1px);
+}
+.btn:focus-visible {
+	outline: 2px solid var(--color-focus);
+	outline-offset: 2px;
+}
+.btn:disabled {
+	background: var(--color-paper-3);
+	border-color: var(--color-paper-3);
+	color: var(--color-muted);
+	cursor: progress;
+	transform: none;
+}
+.btn > svg {
+	width: 20px;
+	height: 20px;
+	flex-shrink: 0;
+	margin-left: calc(-1 * var(--space-2xs));
+}
+.btn--quiet {
+	background: var(--color-paper);
+	border-color: var(--color-muted);
+	color: var(--color-ink);
+}
+.btn--quiet:hover {
+	background: var(--color-paper-2);
+	border-color: var(--color-ink);
+}
+.btn--quiet:disabled {
+	background: var(--color-paper-2);
+	border-color: var(--color-rule);
+	color: var(--color-muted);
+	cursor: not-allowed;
+}
+
+.site-footer {
+	padding-block: var(--space-2xl);
+	border-top: 1px solid var(--color-rule);
+}

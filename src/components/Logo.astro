@@ -1,0 +1,19 @@
+---
+interface Props {
+	/** Rendered height in px; the width follows the logo's 4:1 ratio */
+	height?: number;
+}
+
+const { height = 32 } = Astro.props;
+---
+
+<svg
+	class="logo"
+	viewBox="0 0 512.06 128"
+	width={Math.round(height * 4)}
+	height={height}
+	aria-hidden="true"
+	focusable="false"
+>
+	<use href="#lc-logo" />
+</svg>
