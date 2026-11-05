@@ -87,7 +87,7 @@ export const en: Messages = {
 	},
 	footer: {
 		tagline:
-			"Impossible cube generator in square or round tube, with a printable fabrication plan. Free, no account: everything is computed in your browser, nothing is sent.",
+			"Impossible cube generator in square or round tube, with a printable fabrication plan. Free, no account: everything is computed in your browser, your dimensions never leave it.",
 		contactTitle: "A word?",
 		contactText:
 			"A dimension that doesn’t add up, a tube size missing from the list, or a cube welded from this plan? Write to me, a photo is always welcome.",
@@ -103,6 +103,8 @@ export const en: Messages = {
 		issues: "Report a bug or suggest an idea",
 		credit:
 			"Made by {name}, metal fabricator in training and freelance web developer ({site}).",
+		privacy:
+			"Anonymous, cookieless audience measurement (Umami): page views and tool usage, never your dimensions.",
 	},
 	notFound: {
 		title: "Page not found",

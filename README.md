@@ -20,6 +20,7 @@ LoopCube is a free, open source generator of **impossible cubes**, also called i
 - [Astro](https://astro.build/): static site, one pre-rendered page per language
 - TypeScript
 - [three.js](https://threejs.org/), loaded only when the 3D preview comes into view, rendered on demand
+- [Umami](https://umami.is/): cookieless audience and usage events (see the [specification](docs/SPEC.md#9-audience-measurement))
 - Vitest, Biome
 - Node 24, Yarn 4 (Corepack)
 - GitHub Pages, deployed by GitHub Actions
@@ -60,7 +61,7 @@ src/
 - A pull request from `develop` to `main`, merged with a merge commit, deploys: check, tests and build, then `dist/` is published to GitHub Pages ([deploy.yml](.github/workflows/deploy.yml)). A failing check, test or build stops the deployment.
 - Both workflows use Node from `.nvmrc` and Yarn through Corepack.
 
-The [specification](docs/SPEC.md) describes what the app does and why: geometry, settings, fabrication, 3D view, plan and SEO.
+The [specification](docs/SPEC.md) describes what the app does and why: geometry, settings, fabrication, 3D view, plan, SEO and audience measurement.
 
 ## License
 
