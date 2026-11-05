@@ -167,3 +167,9 @@ A closed 3D loop of 18 bends cannot be bent from a single tube. The plan therefo
   - use: smooth 3D on mobile, on-demand rendering (no idle render loop), geometry recomputed at most once per frame while a slider moves.
 - A **pure geometry module** (no DOM, no 3D), single source for the 3D view and the plan, covered by unit tests.
 - i18n: all strings in per-language files; unit formatting in one place.
+
+## 9. Audience measurement
+
+- [Umami](https://umami.is/), self-hosted: no cookie, no personal data, so no consent banner. A line in the footer says so.
+- Page views, plus a few events on how the tool is used: first setting changed, plan printed (unit, profile), view options, contact, share, outbound links. Never the dimensions entered: they stay in the browser, as the footer promises.
+- A blocked tracker never breaks the page. The list of events and their data is the `Events` type in `src/app/analytics.ts`.

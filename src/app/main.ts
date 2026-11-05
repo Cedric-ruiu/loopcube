@@ -2,6 +2,7 @@ import type { Messages } from "../i18n/fr";
 import type { Unit } from "../units/units";
 import type { MarkDisplay } from "../viewer/model";
 import type { Viewer, ViewOptions } from "../viewer/viewer";
+import { track } from "./analytics";
 import { createForm } from "./form";
 import { renderLegend } from "./legend";
 import { defaultSettings, type Settings, toDesign } from "./settings";
@@ -91,6 +92,10 @@ export function start(): void {
 	});
 
 	const plan = createPlan(() => settings, config);
+	// The form only notifies real edits, never its initial state: one use per page load
+	let used = false;
+	/** Set by the print button, so that beforeprint tells it from the browser's own command */
+	let printButton = false;
 
 	const refresh = () => {
 		plan.invalidate();
@@ -109,15 +114,35 @@ export function start(): void {
 		messages,
 		settings,
 		onChange(next) {
-			if (next.unit !== settings.unit) storeUnit(next.unit);
+			if (!used) {
+				used = true;
+				track("configurator-use");
+			}
+			if (next.unit !== settings.unit) {
+				storeUnit(next.unit);
+				track("unit-change", { unit: next.unit });
+			}
 			settings = next;
 			refresh();
 		},
 	});
-	colors.addEventListener("change", refresh);
-	marks.addEventListener("change", refresh);
-	human.addEventListener("change", refresh);
-	diagonal.addEventListener("click", () => viewer?.diagonalView());
+	for (const [option, input] of [
+		["colors", colors],
+		["marks", marks],
+		["human", human],
+	] as const) {
+		input.addEventListener("change", () => {
+			refresh();
+			track("view-option", {
+				option,
+				value: input instanceof HTMLInputElement ? input.checked : input.value,
+			});
+		});
+	}
+	diagonal.addEventListener("click", () => {
+		viewer?.diagonalView();
+		track("diagonal-view");
+	});
 	print.addEventListener("click", () => {
 		print.disabled = true;
 		plan
@@ -125,13 +150,23 @@ export function start(): void {
 			.then(() => {
 				plan.render();
 				print.disabled = false;
+				printButton = true;
 				window.print();
 			})
 			.catch(() => {
 				print.disabled = false;
 			});
 	});
-	addEventListener("beforeprint", () => plan.render());
+	addEventListener("beforeprint", () => {
+		plan.render();
+		track("plan-print", {
+			unit: settings.unit,
+			profile:
+				settings.shape === "round" ? `round-${settings.joint}` : "square",
+			method: printButton ? "button" : "browser",
+		});
+		printButton = false;
+	});
 	refresh();
 
 	whenNeeded(stage)

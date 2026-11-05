@@ -1,5 +1,6 @@
 ---
 import { Font } from "astro:assets";
+import Analytics from "../components/Analytics.astro";
 import Logo from "../components/Logo.astro";
 import LogoSymbol from "../components/LogoSymbol.astro";
 import { fallbackLocale, localePath, locales, t } from "../i18n";
@@ -17,6 +18,7 @@ const title = `LoopCube — ${locales.map((l) => t(l).notFound.title).join(" · 
 		<title>{title}</title>
 		<Font cssVariable="--font-barlow" preload />
 		<link rel="icon" href={`${import.meta.env.BASE_URL}favicon.svg`} type="image/svg+xml" />
+		<Analytics />
 	</head>
 	<body>
 		<LogoSymbol />

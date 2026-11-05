@@ -1,5 +1,6 @@
 ---
 import { Font } from "astro:assets";
+import Analytics from "../components/Analytics.astro";
 import LogoSymbol from "../components/LogoSymbol.astro";
 import {
 	fallbackLocale,
@@ -33,6 +34,7 @@ const imageAlt = t(locale ?? fallbackLocale).meta.imageAlt;
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<title>{title}</title>
 		<meta name="description" content={description} />
+		<meta name="google-site-verification" content="ZFL_Uz5FNhczyHJl4xXeef_O3Hp7MQX5KLSTqeT2_Lc" />
 		<Font cssVariable="--font-barlow" preload />
 		<link rel="canonical" href={absolute(path)} />
 		{locales.map((l) => <link rel="alternate" hreflang={l} href={absolute(localePath(l))} />)}
@@ -55,6 +57,7 @@ const imageAlt = t(locale ?? fallbackLocale).meta.imageAlt;
 				.filter((l) => l !== locale)
 				.map((l) => <meta property="og:locale:alternate" content={ogLocale(l)} />)
 		}
+		<Analytics />
 		<slot name="head" />
 	</head>
 	<body>

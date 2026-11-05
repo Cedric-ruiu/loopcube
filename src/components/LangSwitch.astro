@@ -19,6 +19,8 @@ const { current } = Astro.props;
 						lang={l}
 						data-lang={l}
 						aria-current={l === current ? "page" : undefined}
+						data-umami-event={l === current ? undefined : "lang-switch"}
+						data-umami-event-to={l === current ? undefined : l}
 					>
 						{t(l).langName}
 					</a>

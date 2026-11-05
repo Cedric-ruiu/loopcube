@@ -2,8 +2,9 @@ import type { Limit } from "../app/settings";
 import type { IssueCode, ParamName, ProfileShape } from "../geometry";
 import type { Unit } from "../units/units";
 import type { MarkDisplay } from "../viewer/model";
+import { frenchSpacing } from "./typography";
 
-export const fr = {
+export const fr = frenchSpacing({
 	langName: "Français",
 	meta: {
 		title:
@@ -90,7 +91,7 @@ export const fr = {
 	},
 	footer: {
 		tagline:
-			"Générateur de cube infini en tube carré ou rond, avec plan de fabrication imprimable. Gratuit et sans compte : tout se calcule dans votre navigateur, rien n’est envoyé.",
+			"Générateur de cube infini en tube carré ou rond, avec plan de fabrication imprimable. Gratuit et sans compte : tout se calcule dans votre navigateur, vos cotes n’en sortent pas.",
 		contactTitle: "Un mot ?",
 		contactText:
 			"Une cote qui ne tombe pas juste, un tube qui manque dans la liste, ou un cube soudé avec ce plan ? Écrivez-moi, une photo me fera toujours plaisir.",
@@ -106,6 +107,8 @@ export const fr = {
 		issues: "Signaler un bug ou proposer une idée",
 		credit:
 			"Créé par {name}, chaudronnier en formation et développeur web freelance ({site}).",
+		privacy:
+			"Mesure d’audience anonyme et sans cookie (Umami) : pages vues et usage de l’outil, jamais vos cotes.",
 	},
 	notFound: {
 		title: "Page introuvable",
@@ -342,6 +345,6 @@ export const fr = {
 			grip: "Prévoir une surlongueur de serrage pour le cintrage, à recouper.",
 		},
 	},
-};
+});
 
 export type Messages = typeof fr;
