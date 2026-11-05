@@ -2,8 +2,9 @@ import type { Limit } from "../app/settings";
 import type { IssueCode, ParamName, ProfileShape } from "../geometry";
 import type { Unit } from "../units/units";
 import type { MarkDisplay } from "../viewer/model";
+import { frenchSpacing } from "./typography";
 
-export const fr = {
+export const fr = frenchSpacing({
 	langName: "Français",
 	meta: {
 		title:
@@ -344,6 +345,6 @@ export const fr = {
 			grip: "Prévoir une surlongueur de serrage pour le cintrage, à recouper.",
 		},
 	},
-};
+});
 
 export type Messages = typeof fr;

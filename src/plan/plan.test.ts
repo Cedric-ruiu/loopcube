@@ -190,7 +190,7 @@ describe("sheet 1", () => {
 			axoLeaders(ELBOWS, french).filter((l) => l.mark.startsWith("C")),
 		).toEqual([{ mark: "C", clear: true }]);
 		const html = planHtml(ELBOWS, french);
-		expect(html).toContain("C : 18 coudes identiques, un à chaque angle.");
+		expect(html).toContain("C\u00a0: 18 coudes identiques, un à chaque angle.");
 		expect(html).toContain("<td>C</td>");
 		expect(planHtml(ELBOWS, english)).toContain(
 			"C: 18 identical elbows, one at each corner.",
@@ -261,7 +261,9 @@ describe("notes and cut cards", () => {
 		expect(metric).toContain(">262,5</text>");
 		expect(metric).toContain(">(L 237,5)</text>");
 		expect(metric).toContain(">(212,5)</text>");
-		expect(metric).toContain("Cotes entre parenthèses : cotes auxiliaires");
+		expect(metric).toContain(
+			"Cotes entre parenthèses\u00a0: cotes auxiliaires",
+		);
 		const imperial = planHtml(DEFAULT_DESIGNS.imperial, english);
 		expect(imperial).toContain(">10-1/2</text>");
 		expect(imperial).toContain(">(L 9-1/2)</text>");
@@ -284,7 +286,7 @@ describe("notes and cut cards", () => {
 	it("say how G is measured, that errors add up and that grinding is optional", () => {
 		const square = planHtml(DEFAULT_DESIGNS.metric, french);
 		expect(square).toContain(
-			"G : jeu entre deux barres parallèles voisines, mesuré perpendiculairement à une face du cube",
+			"G\u00a0: jeu entre deux barres parallèles voisines, mesuré perpendiculairement à une face du cube",
 		);
 		expect(square).toContain("les écarts des 18 soudures se cumulent");
 		expect(square).toContain("Soudures meulées à ras");
