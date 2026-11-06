@@ -142,6 +142,7 @@ A closed 3D loop of 18 bends cannot be bent from a single tube. The plan therefo
 - A **"Diagonal view"** button puts the camera on the main diagonal of the envelope (through the corners where the doubled edges meet; `(B, A, C)` for a box) to show the illusion.
 - A checkbox **colors parts by type**: each part type (as in 2.6) has its color, with a legend giving the count of each type.
 - Optional display of the **part marks** (same marks as the plan).
+- A checkbox, unchecked by default, shows the **overall dimensions** (length, depth, height) as dimension lines, in the chosen unit, on the outline seen from the camera.
 - Square tube drawn with its miters; round tube with its elbows or bends.
 
 ## 6. Fabrication plan

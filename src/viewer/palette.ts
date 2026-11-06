@@ -11,6 +11,8 @@ const PART_COLORS = [
 export const METAL = "#b4bac2";
 export const WELD = "#3d4249";
 export const EDGE = "#1b1f24";
+/** Mid-tone, readable on the light and the dark background */
+export const DIMENSION = "#6e7781";
 export const FIGURE = {
 	suit: "#575c45",
 	fold: "#6b7058",

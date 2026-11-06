@@ -1,7 +1,9 @@
 import {
 	DirectionalLight,
+	DoubleSide,
 	HemisphereLight,
 	LineBasicMaterial,
+	MeshBasicMaterial,
 	MeshLambertMaterial,
 	OrthographicCamera,
 	Quaternion,
@@ -12,12 +14,15 @@ import {
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { CSS2DRenderer } from "three/addons/renderers/CSS2DRenderer.js";
 import { type Design, extents, type Vec3 } from "../geometry";
+import { buildDimensions, type Dimensions } from "./dimensions";
 import { buildHuman, faceTowards, humanReach, standBeside } from "./human";
 import { buildModel, type Model, type ModelStyle } from "./model";
-import { EDGE, METAL, partColor, WELD } from "./palette";
+import { DIMENSION, EDGE, METAL, partColor, WELD } from "./palette";
 
 export interface ViewOptions extends ModelStyle {
 	human: boolean;
+	/** Formats the overall dimensions, shown when set */
+	dimensions: ((mm: number) => string) | null;
 }
 
 export interface Viewer {
@@ -83,6 +88,11 @@ export async function createViewer(
 		weld: new MeshLambertMaterial({ color: WELD }),
 		edge: new LineBasicMaterial({ color: EDGE }),
 	};
+	const dimensionMaterials = {
+		line: new LineBasicMaterial({ color: DIMENSION }),
+		// Double-sided: the dimensions are mirrored towards the camera
+		arrow: new MeshBasicMaterial({ color: DIMENSION, side: DoubleSide }),
+	};
 
 	const controls = new OrbitControls(camera, renderer.domElement);
 	controls.enablePan = false;
@@ -98,6 +108,7 @@ export async function createViewer(
 		cancelAnimationFrame(pending);
 		pending = 0;
 		if (human.visible) faceTowards(human, camera.position);
+		dimensions?.orient(camera.position);
 		renderer.render(scene, camera);
 		labels.render(scene, camera);
 	};
@@ -112,6 +123,7 @@ export async function createViewer(
 	/** Radius of the sphere that holds the cube, and the figure when shown */
 	let reach = 0;
 	let model: Model | null = null;
+	let dimensions: Dimensions | null = null;
 
 	const resize = () => {
 		const { clientWidth: width, clientHeight: height } = stage;
@@ -151,6 +163,19 @@ export async function createViewer(
 		scene.add(model.group);
 		human.visible = options.human;
 		size = extents(design);
+		if (dimensions) {
+			scene.remove(dimensions.group);
+			dimensions.dispose();
+			dimensions = null;
+		}
+		if (options.dimensions) {
+			dimensions = buildDimensions(
+				size,
+				options.dimensions,
+				dimensionMaterials,
+			);
+			scene.add(dimensions.group);
+		}
 		standBeside(human, size);
 		frame(options.human);
 	};

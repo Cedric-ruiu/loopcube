@@ -174,6 +174,7 @@ export const en: Messages = {
 		diagonal: "Diagonal view",
 		colors: "Color by type",
 		human: "5 ft 11½ in person",
+		dimensions: "Dimensions",
 		marks: "Part marks",
 		markDisplays: { none: "none", type: "by part", piece: "by piece" },
 		help: "Drag to rotate, scroll or pinch to zoom",

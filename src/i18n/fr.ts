@@ -201,6 +201,7 @@ export const fr = frenchSpacing({
 		diagonal: "Vue diagonale",
 		colors: "Couleurs par type",
 		human: "Silhouette 1,82 m",
+		dimensions: "Cotes",
 		marks: "Repères",
 		markDisplays: {
 			none: "aucun",

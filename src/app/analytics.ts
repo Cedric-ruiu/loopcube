@@ -15,7 +15,7 @@ interface Events {
 	"configurator-use": undefined;
 	"unit-change": { unit: Unit };
 	"view-option": {
-		option: "colors" | "marks" | "human";
+		option: "colors" | "marks" | "human" | "dimensions";
 		value: string | boolean;
 	};
 	"diagonal-view": undefined;
