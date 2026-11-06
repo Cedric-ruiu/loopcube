@@ -8,6 +8,7 @@ import {
 	type Issue,
 	MIN_STRAIGHT,
 	type ParamName,
+	type PatternKind,
 	type ProfileShape,
 } from "../geometry";
 import type { Messages } from "../i18n/fr";
@@ -23,6 +24,7 @@ import {
 import {
 	FIELD_SPECS,
 	FIELDS,
+	fieldsOf,
 	fromDisplay,
 	issuesOf,
 	type Joint,
@@ -32,6 +34,7 @@ import {
 	sliderRange,
 	snapToStep,
 	typedRange,
+	withPattern,
 	withSection,
 	withShape,
 	withUnit,
@@ -77,13 +80,16 @@ export function createForm(form: HTMLFormElement, options: FormOptions): void {
 	const radios = (name: string) => [
 		...form.querySelectorAll<HTMLInputElement>(`input[name="${name}"]`),
 	];
+	const pattern = get<HTMLSelectElement>("#lc-pattern");
 	const section = get<HTMLSelectElement>("#lc-section");
 	const hints = {
+		pattern: get("#lc-pattern-hint"),
 		shape: get("#lc-shape-hint"),
 		joint: get("#lc-joint-hint"),
 		section: get("#lc-section-hint"),
 	};
 	const roundOnly = [...form.querySelectorAll<HTMLElement>("[data-round]")];
+	const boxOnly = [...form.querySelectorAll<HTMLElement>("[data-box]")];
 	const fields = Object.fromEntries(
 		FIELDS.map((p): [ParamName, Field] => [
 			p,
@@ -103,7 +109,11 @@ export function createForm(form: HTMLFormElement, options: FormOptions): void {
 	const show = (mm: number, p: ParamName) =>
 		formatMeasure(mm, s.unit, locale, measureOf(p));
 	const paramLabel = (p: ParamName) =>
-		p === "width" ? m.ui.width[s.shape] : m.params[p];
+		p === "width"
+			? m.ui.width[s.shape]
+			: p === "edge"
+				? m.ui.edge[s.pattern]
+				: m.params[p];
 	const issueText = (issue: Issue) => {
 		const direction = issue.code === "wallTooThick" ? "down" : "up";
 		const limit =
@@ -281,6 +291,9 @@ export function createForm(form: HTMLFormElement, options: FormOptions): void {
 
 	function render() {
 		for (const radio of radios("unit")) radio.checked = radio.value === s.unit;
+		pattern.value = s.pattern;
+		hints.pattern.textContent = m.ui.patternHints[s.pattern];
+		for (const element of boxOnly) element.hidden = s.pattern !== "box";
 		hints.shape.textContent = renderChoice("shape", s.shape, m.ui.shapes, (v) =>
 			withShape(s, v),
 		);
@@ -295,9 +308,7 @@ export function createForm(form: HTMLFormElement, options: FormOptions): void {
 			}),
 		);
 		renderSections();
-		for (const p of FIELDS) {
-			if (p !== "bendRadius" || s.shape === "round") renderField(p);
-		}
+		for (const p of fieldsOf(s)) renderField(p);
 	}
 
 	form.addEventListener("submit", (event) => event.preventDefault());
@@ -311,6 +322,11 @@ export function createForm(form: HTMLFormElement, options: FormOptions): void {
 	});
 	form.addEventListener("change", (event) => {
 		const target = event.target;
+		if (target === pattern) {
+			active = null;
+			update(withPattern(s, pattern.value as PatternKind));
+			return;
+		}
 		if (target === section) {
 			active = null;
 			const [i = -1, j = -1] = section.value.split(":").map(Number);

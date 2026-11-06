@@ -1,4 +1,4 @@
-import { axisLengths, buildLoop, type Loop } from "./loop";
+import { buildLoop, cubeEdges, type Loop } from "./loop";
 import type { Design } from "./params";
 import { classifyPieces, type PieceType, pieceEnds } from "./pieces";
 import { bend, bendPoint, midpoint } from "./shapes";
@@ -42,18 +42,17 @@ export type Part = PartShape & {
 	marks: string[];
 };
 
-const EPS = 1e-6;
 const lengthKey = (length: number): number => Math.round(length * 1e6) / 1e6;
 
 /**
  * A bent loop cannot be made from one tube: it is cut in the middle of the
- * short bars (spec §4.3), which gives identical, planar sections.
+ * bars of the single edges (spec §4.3), which gives planar sections.
  */
 export function bentSections(loop: Loop): BentSection[] {
-	const { short } = axisLengths(loop.params);
-	const cuts = loop.segments
-		.filter((s) => Math.abs(s.length - short) < EPS)
-		.map((s) => s.index);
+	const cuts = cubeEdges(loop)
+		.filter((e) => e.segments.length === 1)
+		.flatMap((e) => e.segments)
+		.sort((a, b) => a - b);
 	return cuts.map((first, i) => {
 		const last = cyclic(cuts, i + 1);
 		const count = (last - first + loop.segments.length) % loop.segments.length;

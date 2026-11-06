@@ -1,4 +1,4 @@
-import { axisLengths, type CubeParams } from "./loop";
+import type { CubeParams } from "./loop";
 
 /** Shortest straight run of material (mm) that can still be cut and welded. */
 export const MIN_STRAIGHT = 10;
@@ -18,13 +18,21 @@ export interface Design extends CubeParams {
 	profile: Profile;
 }
 
-export type ParamName = "edge" | "width" | "gap" | "wall" | "bendRadius";
+export type ParamName =
+	| "edge"
+	| "length"
+	| "depth"
+	| "width"
+	| "gap"
+	| "wall"
+	| "bendRadius";
 
 export type IssueCode =
 	| "notPositive"
 	| "wallTooThick"
 	| "bendRadiusTooSmall"
-	| "straightTooShort";
+	| "straightTooShort"
+	| "lengthTooShort";
 
 export interface Issue {
 	code: IssueCode;
@@ -45,6 +53,8 @@ export interface Range {
 
 export interface Bounds {
 	edge: Range;
+	length?: Range;
+	depth?: Range;
 	width: Range;
 	gap: Range;
 	wall: Range;
@@ -62,6 +72,7 @@ export const DEFAULT_DESIGNS = {
 		gap: 12.5,
 		wall: 2,
 		profile: { shape: "square" },
+		pattern: { kind: "cube" },
 	},
 	imperial: {
 		edge: 304.8,
@@ -69,8 +80,32 @@ export const DEFAULT_DESIGNS = {
 		gap: 12.7,
 		wall: 2.1082,
 		profile: { shape: "square" },
+		pattern: { kind: "cube" },
 	},
 } as const satisfies Record<string, Design>;
+
+interface ShortRun {
+	param: "edge" | "depth";
+	size: number;
+	widths: number;
+	gaps: number;
+}
+
+/**
+ * Shortest centreline run along each size, `size − widths·W − gaps·G`:
+ * across the edge A, and across the depth C of a box, whose shortest bars are
+ * one bar and one gap longer. A box is never shorter than deep, so its length
+ * adds nothing.
+ */
+function shortRuns(d: CubeParams): ShortRun[] {
+	const edge: ShortRun = { param: "edge", size: d.edge, widths: 3, gaps: 2 };
+	return d.pattern.kind === "box"
+		? [edge, { param: "depth", size: d.pattern.depth, widths: 2, gaps: 1 }]
+		: [edge];
+}
+
+const runLength = (d: CubeParams, run: ShortRun): number =>
+	run.size - run.widths * d.width - run.gaps * d.gap;
 
 /**
  * Shortest straight run in the loop, the first thing to vanish when the cube
@@ -78,7 +113,7 @@ export const DEFAULT_DESIGNS = {
  * or straight tube between a bend and the mid-bar weld of a bent section.
  */
 export function shortestStraight(d: Design): number {
-	const { short } = axisLengths(d);
+	const short = Math.min(...shortRuns(d).map((run) => runLength(d, run)));
 	const p = d.profile;
 	if (p.shape === "square") return short - d.width;
 	return p.joint === "elbow"
@@ -94,6 +129,11 @@ export function validate(d: Design): Issue[] {
 	if (d.profile.shape === "round" && !(d.profile.bendRadius > 0)) {
 		issues.push({ code: "notPositive", param: "bendRadius" });
 	}
+	if (d.pattern.kind === "box") {
+		for (const param of ["length", "depth"] as const) {
+			if (!(d.pattern[param] > 0)) issues.push({ code: "notPositive", param });
+		}
+	}
 	if (issues.length > 0) return issues;
 
 	if (d.wall > d.width / 2 + EPS) {
@@ -108,10 +148,21 @@ export function validate(d: Design): Issue[] {
 		});
 	}
 	if (shortestStraight(d) < MIN_STRAIGHT - EPS) {
+		const runs = shortRuns(d);
+		const shortest = runs.reduce((a, b) =>
+			runLength(d, b) < runLength(d, a) ? b : a,
+		);
 		issues.push({
 			code: "straightTooShort",
-			param: "edge",
-			limit: bounds(d).edge.min,
+			param: shortest.param,
+			limit: bounds(d)[shortest.param]?.min ?? 0,
+		});
+	}
+	if (d.pattern.kind === "box" && d.pattern.length < d.pattern.depth - EPS) {
+		issues.push({
+			code: "lengthTooShort",
+			param: "length",
+			limit: d.pattern.depth,
 		});
 	}
 	return issues;
@@ -121,9 +172,11 @@ export function validate(d: Design): Issue[] {
  * Slider limits for each parameter, the others being fixed (or following the
  * width, see Links). Any value inside these ranges passes validate().
  *
- * Every limit comes from one linear constraint on the shortest straight run:
- * A − 3W − 2G − E ≥ k·MIN_STRAIGHT, where E is W for a square profile or 2R
- * for a round tube, and k is 2 for a bent tube (the weld splits the run).
+ * Every limit comes from linear constraints on the shortest straight runs:
+ * A − 3W − 2G − E ≥ k·MIN_STRAIGHT, and C − 2W − G − E ≥ k·MIN_STRAIGHT for
+ * the depth C of a box, where E is W for a square profile or 2R for a round
+ * tube, and k is 2 for a bent tube (the weld splits the run). A box also
+ * keeps its length B ≥ C.
  */
 export function bounds(d: Design, links: Links = {}): Bounds {
 	const p = d.profile;
@@ -131,37 +184,52 @@ export function bounds(d: Design, links: Links = {}): Bounds {
 	const reserve = k * MIN_STRAIGHT;
 	const extra = p.shape === "square" ? d.width : 2 * p.bendRadius;
 
-	const widthFactor =
-		3 +
-		(links.gapRatio === undefined ? 0 : 2 * links.gapRatio) +
-		(p.shape === "square"
-			? 1
-			: links.bendRadiusRatio === undefined
-				? 0
-				: 2 * links.bendRadiusRatio);
-	const widthFixed =
-		(links.gapRatio === undefined ? 2 * d.gap : 0) +
-		(p.shape === "round" && links.bendRadiusRatio === undefined
-			? 2 * p.bendRadius
-			: 0);
-	let widthMax = (d.edge - reserve - widthFixed) / widthFactor;
+	const runs = shortRuns(d);
+	const smallest = (f: (run: ShortRun) => number): number =>
+		Math.min(...runs.map(f));
+	const minSize = (run: ShortRun): number =>
+		run.size - runLength(d, run) + extra + reserve;
+
+	let widthMax = smallest((run) => {
+		const factor =
+			run.widths +
+			(links.gapRatio === undefined ? 0 : run.gaps * links.gapRatio) +
+			(p.shape === "square"
+				? 1
+				: links.bendRadiusRatio === undefined
+					? 0
+					: 2 * links.bendRadiusRatio);
+		const fixed =
+			(links.gapRatio === undefined ? run.gaps * d.gap : 0) +
+			(p.shape === "round" && links.bendRadiusRatio === undefined
+				? 2 * p.bendRadius
+				: 0);
+		return (run.size - reserve - fixed) / factor;
+	});
 	if (p.shape === "round" && links.bendRadiusRatio === undefined) {
 		widthMax = Math.min(widthMax, p.bendRadius / MIN_BEND_RADIUS_RATIO);
 	}
 
+	const [edgeMin, depthMin] = runs.map(minSize);
 	const result: Bounds = {
-		edge: {
-			min: 3 * d.width + 2 * d.gap + extra + reserve,
-			max: Number.POSITIVE_INFINITY,
-		},
+		edge: { min: edgeMin ?? 0, max: Number.POSITIVE_INFINITY },
 		width: { min: 2 * d.wall, max: widthMax },
-		gap: { min: 0, max: (d.edge - 3 * d.width - extra - reserve) / 2 },
+		gap: {
+			min: 0,
+			max: smallest(
+				(run) => (run.size - run.widths * d.width - extra - reserve) / run.gaps,
+			),
+		},
 		wall: { min: 0, max: d.width / 2 },
 	};
+	if (d.pattern.kind === "box" && depthMin !== undefined) {
+		result.length = { min: d.pattern.depth, max: Number.POSITIVE_INFINITY };
+		result.depth = { min: depthMin, max: d.pattern.length };
+	}
 	if (p.shape === "round") {
 		result.bendRadius = {
 			min: d.width * MIN_BEND_RADIUS_RATIO,
-			max: (d.edge - 3 * d.width - 2 * d.gap - reserve) / 2,
+			max: smallest((run) => (runLength(d, run) - reserve) / 2),
 		};
 	}
 	return result;

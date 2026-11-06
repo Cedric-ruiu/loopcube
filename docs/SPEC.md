@@ -28,13 +28,23 @@ The data below was computed and verified numerically.
 - Seen along the cube's main diagonal, the object draws 6 triangular lobes around a central star: this is the illusion of the endless line.
 - The object has a 3-fold symmetry around that diagonal.
 
-### 2.2 Geometric parameters
+### 2.2 Shapes
 
-- `A`: cube edge = **overall outside size** of the object.
+The settings offer three shapes, all built on the same loop of 18 runs (same edges doubled, same order):
+
+- **Classic cube**: every face alike, 3-fold symmetry (below, unless stated otherwise).
+- **Framed cube**: the top and bottom faces are full-size frames, flush with the edges of the cube (enough to rest a top on). The 4 doubled runs of these two faces are flush on both ends; the bar paired with each one sits right under or above it, flush with the same side face (stacked, not offset diagonally). The 2 vertical doubled edges stay offset diagonally. Only a 2-fold symmetry is left.
+- **Box**: the framed cube with its own length along X (horizontal, seen in the front view) and depth along Z, e.g. for a coffee table. Overall size `B × A × C`: `B` is the length, `A` the height, `C` the depth. `B ≥ C`, the height is free; at `B = C = A` it is the framed cube.
+
+### 2.3 Geometric parameters
+
+- `A`: cube edge = **overall outside size** of the object; height of a box.
+- `B`: overall length of a box, along X.
+- `C`: overall depth of a box, along Z.
 - `W`: width of the square tube, or outside diameter of the round tube.
 - `G`: gap between two parallel runs. Computed default: `G = W / 2`, editable.
 
-### 2.3 Corner coordinates
+### 2.4 Corner coordinates
 
 Origin at the center of the cube. The 18 corners of the loop (on the tube axes) are encoded as signed levels, in loop order:
 
@@ -44,27 +54,36 @@ Origin at the center of the cube. The 18 corners of the loop (on the tube axes) 
 [-2,-2,-1] [ 1,-2,-1] [ 1, 2,-1] [ 1, 2, 2] [ 1,-1, 2] [ 1,-1,-2]
 ```
 
-Each component `c` converts to a real coordinate:
+Framed cube and box: the same corners, except the 6 where the loop turns in the top or bottom face (both runs horizontal), which move to level 1 (flush):
+
+```
+[-1,-1,-1] [-1,-1, 1] [ 2,-1, 1] [ 2, 2, 1] [-1, 2, 1] [-1,-2, 1]
+[-1,-2,-2] [-1, 1,-2] [-1, 1, 1] [ 1, 1, 1] [ 1, 1,-1] [-2, 1,-1]
+[-2,-2,-1] [ 1,-2,-1] [ 1, 2,-1] [ 1, 2, 2] [ 1,-1, 2] [ 1,-1,-1]
+```
+
+Each component `c` converts to a real coordinate, with `S` the outside size along that axis (`A`, or for a box `B` along X and `C` along Z):
 
 ```
 n = |c| - 1            (level 0 or 1)
-x = sign(c) * (A/2 - W/2 - n * (W + G))
+x = sign(c) * (S/2 - W/2 - n * (W + G))
 ```
 
 Run `i` joins corner `i` to corner `i+1` (the last one returns to the first).
 
-### 2.4 Properties covered by unit tests
+### 2.5 Properties covered by unit tests
 
 - Two consecutive corners differ on one axis only (runs parallel to the axes), and every corner is at 90°.
 - Overall size = `A` exactly.
-- Gap between two non-consecutive runs, measured axis by axis (the gap seen in orthographic views) = `G` exactly. In 3D, doubled bars face each other corner to corner: the Euclidean distance is `G√2` in square tube, and `(W+G)√2 − W` in round tube. `G` always means the axis-by-axis gap.
+- Gap between two non-consecutive runs, measured axis by axis (the gap seen in orthographic views) = `G` exactly. In 3D, doubled bars face each other corner to corner: the Euclidean distance is `G√2` in square tube, and `(W+G)√2 − W` in round tube. `G` always means the axis-by-axis gap. Framed cube and box: stacked bars face each other side to side, so the Euclidean distance is `G` too.
 - Centerline lengths (corner to corner):
   - **12 long runs**: `L1 = A - 2W - G` (the doubled edges)
   - **6 short runs**: `L2 = A - 3W - 2G` (the single edges)
   - Example `A=300, W=25, G=12`: 12 × 238 mm and 6 × 201 mm.
-- Validity: the shortest straight length must stay ≥ `MIN_STRAIGHT` (10 mm). In square tube it is `L2 − W` (otherwise the miters of the short part cross); in round tube with elbows, `L2 − 2R`; in bent tube, `L2/2 − R` on each side of the weld. The sliders cannot reach impossible combinations, and the interface explains why.
+  - Framed cube: 4 flush runs `A − W`, 12 runs `L1`, 2 vertical runs `L2`. Box: the same, runs along X longer by `B − A` and runs along Z by `C − A`. Overall size = `B × A × C` exactly.
+- Validity: the shortest straight length must stay ≥ `MIN_STRAIGHT` (10 mm). In square tube it is `L2 − W` (otherwise the miters of the short part cross); in round tube with elbows, `L2 − 2R`; in bent tube, `L2/2 − R` on each side of the weld. For a box, `L2` is the shorter of `A − 3W − 2G` (vertical runs) and `C − 2W − G` (runs along the depth). The sliders cannot reach impossible combinations, and the interface explains why.
 
-### 2.5 Part types
+### 2.6 Part types
 
 Parts differ by their length **and** the orientation of the cuts at both ends. With the geometry above and square tube mitered at 45°:
 
@@ -72,9 +91,11 @@ Parts differ by their length **and** the orientation of the cuts at both ends. W
 - 3 short parts with miters turned 90° from each other;
 - 3 short parts mirroring the previous ones (twisted the other way).
 
-These results are not hard-coded: the classification is **computed** from the geometry (length + relative orientation of the two cuts + chirality), so it stays correct if the geometry changes. The tests check that it finds 12 + 3 + 3.
+These results are not hard-coded: the classification is **computed** from the geometry (length + relative orientation of the two cuts + chirality), so it stays correct if the geometry changes. The tests check that it finds 12 + 3 + 3, and 4 + 8 + 2 + 2 + 1 + 1 for the framed cube (the box splits further, its runs along X and Z having their own lengths).
 
 ## 3. User settings
+
+- **Shape** (drop-down menu, first setting): classic cube, framed cube, or box (coffee table), each with a one-line description. The box adds a **length** `B` and a **depth** `C`; its edge is then labeled height. Picking the box starts its depth at the cube edge and its length at `2C` when it was shorter than `C`; both are kept while the shape stays a box. The length never goes under the depth: the depth stops at the length and the length at the depth, and the interface says why. The height is free.
 
 - **Profile**: square tube or round tube.
 - **Section**: width (square) or outside diameter (round), and **wall thickness** (separate slider).
@@ -110,7 +131,7 @@ Defaults: `A = 300 mm`, square tube `25 × 25 × 2 mm`, `G = 12.5 mm`. Imperial:
 
 A closed 3D loop of 18 bends cannot be bent from a single tube. The plan therefore splits the loop into **identical bent sections**, joined by butt welds in the middle of straight runs.
 
-- Split: cut in the middle of the 6 short runs. This gives **6 identical, flat sections** (`L2/2 – L1 – L1 – L2/2`, 3 bends in one plane), joined with a rotation of ±90°.
+- Split: cut in the middle of the 6 runs of the single edges. This gives **6 flat sections** (3 bends in one plane), joined with a rotation of ±90°. Classic cube: 6 identical sections `L2/2 – L1 – L1 – L2/2`. Framed cube: 2 types (4 side sections, 2 for the top and bottom). Box: 3 types of 2. The plan gives each weld from the section that really comes before it in the loop.
 - The bends must not reduce the gap between bars.
 - For each section: developed length (on the axis), dimensions between bends, angle of each bend (90°), **rotation of the tube between two successive bends** (0°, 90°, 180° or -90°), bend radius.
 
@@ -118,9 +139,10 @@ A closed 3D loop of 18 bends cannot be bent from a single tube. The plan therefo
 
 - Real-time, in sync with every setting.
 - Zoom (wheel, pinch) and free rotation (mouse, finger).
-- A **"Diagonal view"** button puts the camera on the cube's main diagonal to show the illusion.
-- A checkbox **colors parts by type**: each part type (as in 2.5) has its color, with a legend giving the count of each type.
+- A **"Diagonal view"** button puts the camera on the main diagonal of the envelope (through the corners where the doubled edges meet; `(B, A, C)` for a box) to show the illusion.
+- A checkbox **colors parts by type**: each part type (as in 2.6) has its own color, told apart from all the others even in shade, with a legend giving the count of each type.
 - Optional display of the **part marks** (same marks as the plan).
+- A checkbox, unchecked by default, shows the **overall dimensions** (length, depth, height) as dimension lines, in the chosen unit, on the outline seen from the camera.
 - Square tube drawn with its miters; round tube with its elbows or bends.
 
 ## 6. Fabrication plan
@@ -132,15 +154,15 @@ A closed 3D loop of 18 bends cannot be bent from a single tube. The plan therefo
   - **EN**: dimensions in fractional inches to 1/16", ASME Y14.5 conventions, third-angle projection with its symbol.
   - If the user changes the unit independently of the language, dimensions follow the chosen unit.
 - Content:
-  1. **Title block** on every page: LoopCube title, settings, date, unit, projection symbol, scale, general tolerance, page number.
+  1. **Title block** on every page: LoopCube title naming the shape, settings (with `B` and `C` for a box), date, unit, projection symbol, scale, general tolerance, page number.
   2. **Overview**:
      - a large axonometric view (trimetric, at the opening angle of the 3D view: no doubled bar is hidden by its neighbor; at least half the sheet) with the marks of every part; each leader line ends with a dot on a visible part of its piece and crosses no other piece (when space runs out, in round tube with elbows, the one that crosses the fewest); a weld symbol (ISO 2553, AWS A2.4 in English): all-around butt weld at each corner or joint;
-     - the orthographic views (front, top, side), reduced, with overall dimensions; on the front view, a circle marks detail X: two doubled bars in section, at scale 1:1 or 1:2 depending on space (more for a large tube), dimensioned `W`, `G` and wall thickness `e`;
+     - the orthographic views (front, top, side), reduced, with overall dimensions (the length of a box on the front and top views, which get a wider column, its depth on the top and side views); on the front view, a circle marks detail X: two doubled bars in section, at scale 1:1 or 1:2 depending on space (more for a large tube), dimensioned `□ W` (`Ø W` in round tube), `G` and wall thickness `e`;
      - a small presentation view along the main diagonal (the illusion), not to scale;
      - the loop sequence (parts in order, from A1 back to A1) and its repeating pattern, computed from the parts.
      - Commercial elbows are identical and fit any corner: they all carry mark C (a single mark in the axonometric view, "C" between tubes in the loop sequence, and in the 3D view).
   3. **Bill of materials**: mark, quantity, designation (section and thickness), length, total material (cumulative tube length, cutting waste not included, and stated as such). Notes: symbols, critical squareness (weld deviations add up when the loop closes), welds ground flush (optional).
-  4. **Cut list**: one dimensioned sketch per part type, with the miters and their relative orientation clearly drawn; the cut length is the main dimension, the other lengths are reference dimensions, in parentheses (ISO 129); end views, at their own scale (1:1 or 1:2, stated under the view), show the tube wall; for bent tube, the layout of each section with dimensions between bends and rotation angles (see 4.3).
+  4. **Cut list**: one dimensioned sketch per part type, with the miters and their relative orientation clearly drawn; the cut length is the main dimension, the other lengths are reference dimensions, in parentheses (ISO 129); end views, at their own scale (1:1 or 1:2, stated under the view), show the tube wall and its size `□ W`; for bent tube, the layout of each section with dimensions between bends and rotation angles (see 4.3).
 - **No** assembly or tack-welding order for now: the loop sequence is not one.
 - The plan stays readable printed in black and white.
 
@@ -171,5 +193,5 @@ A closed 3D loop of 18 bends cannot be bent from a single tube. The plan therefo
 ## 9. Audience measurement
 
 - [Umami](https://umami.is/), self-hosted: no cookie, no personal data, so no consent banner. A line in the footer says so.
-- Page views, plus a few events on how the tool is used: first setting changed, plan printed (unit, profile), view options, contact, share, outbound links. Never the dimensions entered: they stay in the browser, as the footer promises.
+- Page views, plus a few events on how the tool is used: first setting changed, plan printed (unit, shape, profile), view options, contact, share, outbound links. Never the dimensions entered: they stay in the browser, as the footer promises.
 - A blocked tracker never breaks the page. The list of events and their data is the `Events` type in `src/app/analytics.ts`.

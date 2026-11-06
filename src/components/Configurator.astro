@@ -25,6 +25,7 @@ const config: ClientConfig = {
 	},
 };
 const units = Object.entries(m.ui.units);
+const patterns = Object.entries(m.ui.patterns);
 const shapes = Object.entries(m.ui.shapes);
 const joints = Object.entries(m.ui.joints);
 ---
@@ -34,20 +35,23 @@ const joints = Object.entries(m.ui.joints);
 		<div class="tools">
 			<label class="toggle"><input type="checkbox" id="lc-colors" autocomplete="off" checked /> {m.viewer.colors}</label>
 			<label class="toggle"><input type="checkbox" id="lc-human" autocomplete="off" checked /> {m.viewer.human}</label>
+			<label class="toggle"><input type="checkbox" id="lc-dimensions" autocomplete="off" /> {m.viewer.dimensions}</label>
 			<label class="toggle">
 				{m.viewer.marks}
 				<select id="lc-marks" autocomplete="off">
 					{Object.entries(m.viewer.markDisplays).map(([value, label]) => <option value={value}>{label}</option>)}
 				</select>
 			</label>
-			<button type="button" class="btn print" id="lc-print">
-				<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
-					<path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
-					<path d="M6 9V3a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v6" />
-					<rect x="6" y="14" width="12" height="8" rx="1" />
-				</svg>
-				{m.plan.button}
-			</button>
+			<div class="print-bar">
+				<button type="button" class="btn print" id="lc-print">
+					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+						<path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
+						<path d="M6 9V3a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v6" />
+						<rect x="6" y="14" width="12" height="8" rx="1" />
+					</svg>
+					{m.plan.button}
+				</button>
+			</div>
 		</div>
 		<div class="stage" id="lc-stage" title={m.viewer.help}>
 			<p class="status" id="lc-status">{m.viewer.loading}</p>
@@ -72,6 +76,14 @@ const joints = Object.entries(m.ui.joints);
 					}
 				</div>
 			</fieldset>
+		</div>
+
+		<div class="field">
+			<label for="lc-pattern">{m.ui.pattern}</label>
+			<select id="lc-pattern" aria-describedby="lc-pattern-hint" autocomplete="off">
+				{patterns.map(([value, label]) => <option value={value} selected={value === "cube"}>{label}</option>)}
+			</select>
+			<p class="msg" id="lc-pattern-hint" aria-live="polite">{m.ui.patternHints.cube}</p>
 		</div>
 
 		<fieldset class="choice">
@@ -112,7 +124,12 @@ const joints = Object.entries(m.ui.joints);
 							<p class="msg" id="lc-joint-hint" aria-live="polite" />
 						</fieldset>
 					)}
-					<div class="field" data-round={p === "bendRadius" ? "" : undefined} hidden={p === "bendRadius"}>
+					<div
+						class="field"
+						data-round={p === "bendRadius" ? "" : undefined}
+						data-box={p === "length" || p === "depth" ? "" : undefined}
+						hidden={p === "bendRadius" || p === "length" || p === "depth"}
+					>
 						<div class="field-head">
 							<label for={`lc-${p}`} id={`lc-${p}-label`}>
 								{p === "width" ? m.ui.width.square : m.params[p]}
@@ -203,9 +220,33 @@ const joints = Object.entries(m.ui.joints);
 	.tools::-webkit-scrollbar {
 		display: none;
 	}
-	.print {
+	.print-bar {
 		order: -1;
 		flex-shrink: 0;
+	}
+	/* Phones and tablets tall enough: the plan button leaves the view options for its own bar */
+	@media (width < 64rem) and (min-height: 34rem) {
+		:global(html) {
+			--print-bar: calc(48px + 2 * var(--space-sm) + 1px);
+			scroll-padding-bottom: calc(var(--print-bar) + var(--space-md));
+		}
+		:global(body) {
+			padding-bottom: var(--print-bar);
+		}
+		.print-bar {
+			position: fixed;
+			inset-inline: 0;
+			bottom: 0;
+			display: flex;
+			justify-content: center;
+			padding: var(--space-sm) var(--gutter);
+			background: var(--color-paper);
+			border-top: 1px solid var(--color-rule);
+		}
+		.print {
+			flex: 1;
+			max-width: 30rem;
+		}
 	}
 	.toggle,
 	.auto {
@@ -557,7 +598,7 @@ const joints = Object.entries(m.ui.joints);
 			padding: 0;
 			overflow: visible;
 		}
-		.print {
+		.print-bar {
 			order: 0;
 			margin-left: auto;
 		}
@@ -571,6 +612,15 @@ const joints = Object.entries(m.ui.joints);
 		color: var(--color-mark-ink);
 		background: var(--color-mark-paper);
 		border: 1px solid var(--color-mark-edge);
+		border-radius: 0.25rem;
+	}
+	.lc-dim {
+		padding: 0 0.25rem;
+		font: 600 0.75rem/1.2 var(--font-mark);
+		font-variant-numeric: tabular-nums;
+		white-space: nowrap;
+		color: var(--color-ink);
+		background: color-mix(in oklab, var(--color-paper-2) 85%, transparent);
 		border-radius: 0.25rem;
 	}
 </style>

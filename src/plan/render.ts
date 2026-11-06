@@ -44,9 +44,13 @@ export const VIEWS = {
 	// off every diagonal of the cube, so that no doubled bar hides behind its
 	// neighbour (trimetric)
 	axo: viewFrom([0.45, 0.55, 1]),
-	// Along the 3-fold axis: the illusion of the endless line
-	diagonal: viewFrom([1, 1, 1]),
 } satisfies Record<string, View>;
+
+/**
+ * Along the diagonal of the envelope of outer `size`, through the corners
+ * where the doubled edges meet: the illusion of the endless line.
+ */
+export const diagonalView = (size: Vec3): View => viewFrom(size);
 
 /** Sheet coordinates (y up) and depth (larger is nearer). */
 export const project = (v: View, p: Vec3): Vec3 => [

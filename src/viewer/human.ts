@@ -452,9 +452,14 @@ export function buildHuman(edge: LineBasicMaterial): Group {
 	return figure;
 }
 
-export function standBeside(figure: Group, edge: number): void {
-	// Half the horizontal diagonal of the cube is its extent along SIDE
-	const distance = edge / Math.SQRT2 + CLEARANCE + HALF_WIDTH;
+/** `size`: outer size of the object along X, Y and Z */
+export function standBeside(
+	figure: Group,
+	size: readonly [number, number, number],
+): void {
+	// Extent of the object along SIDE, from its centre
+	const distance =
+		(size[0] + size[2]) / (2 * Math.SQRT2) + CLEARANCE + HALF_WIDTH;
 	figure.position
 		.copy(SIDE)
 		.multiplyScalar(distance)

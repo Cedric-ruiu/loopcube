@@ -2,13 +2,26 @@ import { AXES, type Axis, map3, sub, unitAxis, type Vec3 } from "./vec";
 
 export type ProfileShape = "square" | "round";
 
+/**
+ * Cube: every face alike. Framed: the top and bottom faces are full-size
+ * frames, flush with the edges. Box: a framed cube with its own length (X)
+ * and depth (Z).
+ */
+export type Pattern =
+	| { kind: "cube" }
+	| { kind: "framed" }
+	| { kind: "box"; length: number; depth: number };
+
+export type PatternKind = Pattern["kind"];
+
 export interface CubeParams {
-	/** A: outer size of the cube, i.e. the overall envelope */
+	/** A: outer size of the cube, i.e. the overall envelope; height of a box */
 	edge: number;
 	/** W: square profile width, or round tube outer diameter */
 	width: number;
 	/** G: clearance between two parallel bars, measured along an axis */
 	gap: number;
+	pattern: Pattern;
 }
 
 export interface Segment {
@@ -38,7 +51,7 @@ export interface CubeEdge {
 	segments: number[];
 }
 
-/** The 18 corners in travel order, as signed levels (spec §2.3). */
+/** The 18 corners in travel order, as signed levels (spec §2.4). */
 // biome-ignore format: keep the layout of the spec
 export const CORNER_CODES: readonly Vec3[] = [
 	[-2, -1, -2], [-2, -1, 1], [2, -1, 1], [2, 2, 1], [-1, 2, 1], [-1, -2, 1],
@@ -46,19 +59,45 @@ export const CORNER_CODES: readonly Vec3[] = [
 	[-2, -2, -1], [1, -2, -1], [1, 2, -1], [1, 2, 2], [1, -1, 2], [1, -1, -2],
 ];
 
+/**
+ * Same loop, the 6 corners where it turns in the top or bottom face moved
+ * flush with the faces (spec §2.4).
+ */
+// biome-ignore format: keep the layout of the spec
+export const FRAMED_CODES: readonly Vec3[] = [
+	[-1, -1, -1], [-1, -1, 1], [2, -1, 1], [2, 2, 1], [-1, 2, 1], [-1, -2, 1],
+	[-1, -2, -2], [-1, 1, -2], [-1, 1, 1], [1, 1, 1], [1, 1, -1], [-2, 1, -1],
+	[-2, -2, -1], [1, -2, -1], [1, 2, -1], [1, 2, 2], [1, -1, 2], [1, -1, -1],
+];
+
 const EPS = 1e-9;
 
-/** Level 1 is flush with the cube faces, level 2 sits one bar and one gap inside. */
-export function levelToCoordinate(code: number, p: CubeParams): number {
+/** Outer size along X, Y and Z: length, height and depth of a box. */
+export const extents = (p: CubeParams): Vec3 =>
+	p.pattern.kind === "box"
+		? [p.pattern.length, p.edge, p.pattern.depth]
+		: [p.edge, p.edge, p.edge];
+
+/**
+ * Level 1 is flush with the faces of an envelope of `size` along the axis,
+ * level 2 sits one bar and one gap inside.
+ */
+export function levelToCoordinate(
+	code: number,
+	size: number,
+	p: CubeParams,
+): number {
 	const level = Math.abs(code) - 1;
-	return (
-		Math.sign(code) * (p.edge / 2 - p.width / 2 - level * (p.width + p.gap))
-	);
+	return Math.sign(code) * (size / 2 - p.width / 2 - level * (p.width + p.gap));
 }
 
 export function buildLoop(p: CubeParams): Loop {
+	const size = extents(p);
+	const codes = p.pattern.kind === "cube" ? CORNER_CODES : FRAMED_CODES;
 	return loopFromCorners(
-		CORNER_CODES.map((code) => map3(code, (c) => levelToCoordinate(c, p))),
+		codes.map((code) =>
+			map3(code, (c, axis) => levelToCoordinate(c, size[axis], p)),
+		),
 		p,
 	);
 }
@@ -89,6 +128,7 @@ export function loopFromCorners(
 	return { params, corners: [...corners], segments };
 }
 
+/** Centreline lengths along an edge of size A: Y for a box. */
 export function axisLengths(p: CubeParams): { long: number; short: number } {
 	return {
 		long: p.edge - 2 * p.width - p.gap,

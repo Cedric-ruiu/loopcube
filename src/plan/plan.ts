@@ -7,6 +7,7 @@ import {
 	cutList,
 	type Design,
 	envelopeBox,
+	extents,
 	type Loop,
 	midpoint,
 	mitredBar,
@@ -46,6 +47,7 @@ import {
 	bendRadiusOf,
 	bendSamples,
 	bounds2,
+	diagonalView,
 	hiddenLines,
 	joinRuns,
 	type P2,
@@ -253,10 +255,15 @@ function orthoView(c: Ctx, v: View, pl: Placement, detail: boolean): string {
 	const b = viewBounds(v, envelopeCorners(c.loop));
 	const lo = toPaper(pl, [b.min[0], b.min[1]]);
 	const hi = toPaper(pl, [b.max[0], b.max[1]]);
-	const edge = c.dim(c.design.edge);
+	const width = c.dim(b.max[0] - b.min[0]);
+	const height = c.dim(b.max[1] - b.min[1]);
 	// Paper y grows downwards: lo is the bottom left corner
-	out.push(linear(c.std, [lo[0], lo[1]], [hi[0], lo[1]], "x", lo[1] + 8, edge));
-	out.push(linear(c.std, [lo[0], lo[1]], [lo[0], hi[1]], "y", lo[0] - 8, edge));
+	out.push(
+		linear(c.std, [lo[0], lo[1]], [hi[0], lo[1]], "x", lo[1] + 8, width),
+	);
+	out.push(
+		linear(c.std, [lo[0], lo[1]], [lo[0], hi[1]], "y", lo[0] - 8, height),
+	);
 	if (detail) out.push(detailCircle(c, v, pl));
 	return out.join("");
 }
@@ -385,7 +392,7 @@ function detailView(
 			[wx, u[1] + h],
 			"y",
 			u[0] - s * (h + 6),
-			`${round ? "Ø" : "W"} ${c.dim(width)}`,
+			`${round ? "Ø" : "□"} ${c.dim(width)}`,
 		),
 	);
 	out.push(
@@ -396,6 +403,8 @@ function detailView(
 			"y",
 			l[0] + s * (h + 6),
 			`G ${c.dim(gap)}`,
+			// Text beside the upper bar: below, it would run into e
+			true,
 		),
 	);
 	const ey = round ? l[1] : l[1] + h;
@@ -426,16 +435,17 @@ const CAPTION = 6.5;
 const DIM_ROOM = { x: 26, y: 15 };
 
 function layout(c: Ctx) {
-	const square = viewBounds(VIEWS.front, envelopeCorners(c.loop));
 	const fit = place(
-		square,
+		viewBounds(VIEWS.front, envelopeCorners(c.loop)),
 		{ x: 0, y: 0, width: SMALL_VIEW, height: SMALL_VIEW },
 		SERIES[c.std],
 	);
-	const size = (square.max[0] - square.min[0]) * fit.scale;
+	const [x = 0, y = 0, z = 0] = extents(c.design).map((v) => v * fit.scale);
+	// Front and top views in the first column, side view and detail X in the
+	// second: a box is longer in the first
 	const cell = {
-		width: Math.max(size + DIM_ROOM.x, 50),
-		height: Math.max(size + DIM_ROOM.y + CAPTION, 46),
+		widths: [x, z].map((w) => Math.max(w + DIM_ROOM.x, 50)) as [number, number],
+		height: Math.max(Math.max(y, z) + DIM_ROOM.y + CAPTION, 46),
 	};
 	const axoHeight = BODY.height - 2 * cell.height;
 	const axo: Area = {
@@ -825,9 +835,9 @@ function overview(c: Ctx): Page {
 	const corners = envelopeCorners(c.loop);
 	const { fit, cell, axoHeight, axo } = layout(c);
 	const box = ([col = 0, row = 0]: number[]) => ({
-		x: col * cell.width,
+		x: col === 0 ? 0 : cell.widths[0],
 		y: axoHeight + row * cell.height,
-		width: cell.width,
+		width: cell.widths[col === 0 ? 0 : 1],
 		height: cell.height - CAPTION,
 	});
 	const at = (spot: number[]): Placement => {
@@ -843,11 +853,12 @@ function overview(c: Ctx): Page {
 		const b = box(at);
 		return caption(b.x + b.width / 2, b.y + cell.height - 3, content);
 	};
-	const sequence = { x: 2 * cell.width, y: axoHeight };
+	const sequence = { x: cell.widths[0] + cell.widths[1], y: axoHeight };
 	const column = BODY.width - sequence.x;
 	const below = axoHeight + sequenceHeight(c, column);
+	const along = diagonalView(extents(c.design));
 	const diagonal = place(
-		viewBounds(VIEWS.diagonal, corners),
+		viewBounds(along, corners),
 		{
 			x: sequence.x + 6,
 			y: below + 2,
@@ -870,7 +881,7 @@ function overview(c: Ctx): Page {
 		cellCaption(cells.top, c.m.views.top),
 		orthoView(c, side, at(cells.side), false),
 		cellCaption(cells.side, sideName),
-		`<g class="lc-light">${drawParts(c, parts(c), VIEWS.diagonal, diagonal)}</g>`,
+		`<g class="lc-light">${drawParts(c, parts(c), along, diagonal)}</g>`,
 		caption(
 			sequence.x + column / 2,
 			BODY.height - 3,
@@ -931,13 +942,15 @@ function bom(c: Ctx, list: ReturnType<typeof cutList>): Block {
 	});
 	const notes = [
 		c.m.unitNote[c.unit],
-		c.m.notes.symbols,
+		fill(c.m.notes.symbols, {
+			size: c.m.notes.size[c.design.pattern.kind === "box" ? "box" : "cube"],
+		}),
 		...(c.design.profile.shape === "round" ? [c.m.notes.radius] : []),
 		c.design.profile.shape === "square"
 			? c.m.notes.square
 			: c.design.profile.joint === "elbow"
 				? c.m.notes.elbow
-				: fill(c.m.notes.bent, { count: list.items[0]?.quantity ?? 0 }),
+				: fill(c.m.notes.bent, { count: weldCount(c).count }),
 		c.design.profile.shape === "round" && c.design.profile.joint === "bent"
 			? fill(c.m.notes.closureBent, {
 					count: weldCount(c).count,
@@ -1273,7 +1286,7 @@ function barCard(c: Ctx, item: CutItem): Block {
 	const eLo = toPaper(epl, [eb.min[0], eb.min[1]]);
 	const eHi = toPaper(epl, [eb.max[0], eb.max[1]]);
 	const towards = (side: number) => arms.some((a) => Math.cos(a - side) > 0.5);
-	const label = `W ${c.dim(design.width)}`;
+	const label = `□ ${c.dim(design.width)}`;
 	if (!towards(Math.PI / 2))
 		end.push(
 			linear(c.std, [eLo[0], eLo[1]], [eHi[0], eLo[1]], "x", eLo[1] + 7, label),
@@ -1720,10 +1733,17 @@ function sectionCard(c: Ctx, item: CutItem): Block {
 				`<tr><td class="c"><b>C${k + 1}</b></td><td class="r">${esc(c.len(bm.start))}</td><td class="r">${esc(c.len(bm.end))}</td><td class="c">${bm.angle}°</td><td class="c">${bm.twist === null ? ms.first : twistText(bm.twist)}</td></tr>`,
 		)
 		.join("");
+	// Sections of several parts may follow one another around the loop
+	const endingAt = new Map(
+		parts(c).flatMap((p) =>
+			p.kind === "section"
+				? p.sections.map((s, k) => [s.segments.at(-1), p.marks[k]] as const)
+				: [],
+		),
+	);
 	const weldRows = layout.welds
 		.map((w, k) => {
-			const from =
-				part.marks[(k + part.marks.length - 1) % part.marks.length] ?? "";
+			const from = endingAt.get(part.sections[k]?.segments[0]) ?? "";
 			return `<tr><td>${esc(fill(ms.weld, { from, to: w.mark }))}</td><td class="c">${twistText(w.twist)}</td></tr>`;
 		})
 		.join("");
@@ -1805,12 +1825,16 @@ function paginate(c: Ctx, blocks: readonly Block[], first: string): Page[] {
 function titleBlock(c: Ctx, page: Page, number: number, count: number): string {
 	const m = c.m;
 	const d = c.design;
+	const size =
+		d.pattern.kind === "box"
+			? fill(m.boxSize, {
+					edge: c.len(d.edge),
+					length: c.len(d.pattern.length),
+					depth: c.len(d.pattern.depth),
+				})
+			: fill(m.size, { edge: c.len(d.edge) });
 	const params = [
-		fill(m.paramsLine, {
-			edge: c.len(d.edge),
-			section: stock(c),
-			gap: c.len(d.gap),
-		}),
+		fill(m.paramsLine, { size, section: stock(c), gap: c.len(d.gap) }),
 		...(d.profile.shape === "round"
 			? [
 					fill(m.radiusParam, { radius: c.len(d.profile.bendRadius) }),
@@ -1828,7 +1852,7 @@ function titleBlock(c: Ctx, page: Page, number: number, count: number): string {
 		String(c.date.getDate()).padStart(2, "0"),
 	].join("-");
 	return `<div class="lc-block">
-<div class="t-title"><b>${esc(m.title)}</b><span>${esc(m.subtitle)}</span><em>${esc(page.sheet)}</em></div>
+<div class="t-title"><b>${esc(m.title[d.pattern.kind])}</b><span>${esc(m.subtitle)}</span><em>${esc(page.sheet)}</em></div>
 ${cell("t-params", m.block.params, esc(params))}
 ${cell("t-date", m.block.date, date)}
 ${cell("t-unit", m.block.unit, esc(m.units[c.unit]))}

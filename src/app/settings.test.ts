@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { DEFAULT_DESIGNS } from "../geometry";
 import {
 	defaultSettings,
-	FIELDS,
+	fieldsOf,
 	fromDisplay,
 	issuesOf,
 	limitReached,
@@ -11,6 +11,7 @@ import {
 	sliderRange,
 	toDesign,
 	typedRange,
+	withPattern,
 	withShape,
 	withUnit,
 	withValue,
@@ -30,10 +31,20 @@ const START: [string, Settings][] = [
 			bendRadius: 30,
 		},
 	],
+	["metric box", withPattern(defaultSettings("mm"), "box")],
+	[
+		"imperial bent framed cube",
+		withPattern(defaultSettings("in", "round", "bent"), "framed"),
+	],
+	[
+		"long bent box with elbows",
+		{
+			...withPattern(defaultSettings("mm", "round"), "box"),
+			edge: 450,
+			length: 1200,
+		},
+	],
 ];
-
-const fieldsOf = (s: Settings) =>
-	FIELDS.filter((p) => p !== "bendRadius" || s.shape === "round");
 
 describe("default settings", () => {
 	it("are the designs of the spec", () => {
@@ -120,6 +131,56 @@ describe("slider limits", () => {
 		expect(limitReached(sliderRange(atMax(s, "width"), "width"))).toBe(
 			"radius",
 		);
+	});
+});
+
+describe("box", () => {
+	const box = withPattern(defaultSettings("mm"), "box");
+	const bound = (p: "depth" | "length", end: "min" | "max") =>
+		withValue(box, p, fromDisplay(sliderRange(box, p)[end], box.unit));
+
+	it("starts as deep as high, twice as long, and shows its length and depth", () => {
+		expect([box.edge, box.depth, box.length]).toEqual([300, 300, 600]);
+		expect(fieldsOf(box)).toEqual(expect.arrayContaining(["length", "depth"]));
+		expect(fieldsOf(defaultSettings("mm"))).not.toContain("length");
+		expect(fieldsOf(defaultSettings("mm"))).not.toContain("depth");
+		expect(toDesign(box).pattern).toEqual({
+			kind: "box",
+			length: 600,
+			depth: 300,
+		});
+	});
+
+	it("starts from the cube edge, and gets longer when that is larger than its length", () => {
+		const large = withValue(defaultSettings("mm"), "edge", 800);
+		expect(withPattern(large, "box").depth).toBe(800);
+		expect(withPattern(large, "box").length).toBe(1600);
+		expect(withPattern(large, "framed").length).toBe(600);
+	});
+
+	it("keeps its depth while it stays a box", () => {
+		const deep = withValue(box, "depth", 450);
+		expect(withPattern(deep, "box")).toEqual(deep);
+		expect(withValue(deep, "edge", 200).depth).toBe(450);
+	});
+
+	it("sets its height apart, and stops the depth at the length and the length at the depth", () => {
+		expect(sliderRange(box, "edge").max).toBe(1500);
+		expect(sliderRange(box, "depth").max).toBe(600);
+		expect(limitReached(sliderRange(bound("depth", "max"), "depth"))).toBe(
+			"length",
+		);
+		expect(sliderRange(box, "length").min).toBe(300);
+		expect(limitReached(sliderRange(bound("length", "min"), "length"))).toBe(
+			"length",
+		);
+	});
+
+	it("keeps its shape when the unit changes", () => {
+		expect(withUnit(box, "in")).toEqual(
+			withPattern(defaultSettings("in"), "box"),
+		);
+		expect(withUnit(box, "in").length).toBeCloseTo(24 * 25.4, 9);
 	});
 });
 

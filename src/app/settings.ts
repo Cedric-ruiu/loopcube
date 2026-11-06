@@ -15,6 +15,7 @@ import {
 	type Links,
 	MIN_BEND_RADIUS_RATIO,
 	type ParamName,
+	type PatternKind,
 	type ProfileShape,
 	validate,
 } from "../geometry";
@@ -29,9 +30,14 @@ export type Joint = "elbow" | "bent";
 
 export interface Settings {
 	unit: Unit;
+	pattern: PatternKind;
 	shape: ProfileShape;
 	joint: Joint;
 	edge: number;
+	/** Used by the box only */
+	length: number;
+	/** Used by the box only */
+	depth: number;
 	width: number;
 	wall: number;
 	/** null while the gap follows the width */
@@ -40,7 +46,7 @@ export interface Settings {
 	bendRadius: number | null;
 }
 
-export type Limit = "straight" | "solid" | "radius";
+export type Limit = "straight" | "solid" | "radius" | "length";
 
 export interface FieldSpec {
 	measure: Measure;
@@ -55,12 +61,30 @@ export const FIELDS: readonly ParamName[] = [
 	"width",
 	"wall",
 	"edge",
+	"length",
+	"depth",
 	"gap",
 	"bendRadius",
 ];
 
+/** Fields of the form that apply to these settings */
+export const fieldsOf = (s: Settings): ParamName[] =>
+	FIELDS.filter(
+		(p) =>
+			(p !== "bendRadius" || s.shape === "round") &&
+			(p !== "length" || s.pattern === "box") &&
+			(p !== "depth" || s.pattern === "box"),
+	);
+
 export const FIELD_SPECS: Record<ParamName, FieldSpec> = {
 	edge: { measure: "length", step: { mm: 1, in: 1 / 16 }, min: 50, max: 1500 },
+	length: {
+		measure: "length",
+		step: { mm: 1, in: 1 / 16 },
+		min: 50,
+		max: 3000,
+	},
+	depth: { measure: "length", step: { mm: 1, in: 1 / 16 }, min: 50, max: 1500 },
 	width: { measure: "size", step: { mm: 0.1, in: 1 / 16 }, min: 5, max: 150 },
 	wall: { measure: "size", step: { mm: 0.1, in: 0.001 }, min: 0.5, max: 25 },
 	gap: { measure: "length", step: { mm: 0.5, in: 1 / 16 }, min: 0.5, max: 300 },
@@ -79,6 +103,10 @@ export const fromDisplay = (value: number, unit: Unit): number =>
 
 export function toDesign(s: Settings): Design {
 	return {
+		pattern:
+			s.pattern === "box"
+				? { kind: "box", length: s.length, depth: s.depth }
+				: { kind: s.pattern },
 		edge: s.edge,
 		width: s.width,
 		gap: s.gap ?? defaultGap(s.width),
@@ -138,6 +166,24 @@ export function withShape(s: Settings, shape: ProfileShape): Settings {
 	return { ...s, shape, width: size.width, wall: defaultWall(size) };
 }
 
+/**
+ * A box starts as deep as the cube edge, and never shorter than deep: its
+ * length then starts at twice its depth.
+ */
+export function withPattern(s: Settings, pattern: PatternKind): Settings {
+	const next = { ...s, pattern };
+	if (pattern !== "box" || s.pattern === "box") return next;
+	const depth = s.edge;
+	return {
+		...next,
+		depth,
+		length:
+			s.length < depth
+				? snapToStep(2 * depth, "length", s.unit, "up")
+				: s.length,
+	};
+}
+
 export const withSection = (
 	s: Settings,
 	size: StandardSize,
@@ -152,9 +198,12 @@ export function defaultSettings(
 	const d = DEFAULT_DESIGNS[unit === "mm" ? "metric" : "imperial"];
 	const square: Settings = {
 		unit,
+		pattern: "cube",
 		shape: "square",
 		joint,
 		edge: d.edge,
+		length: 2 * d.edge,
+		depth: d.edge,
 		width: d.width,
 		wall: d.wall,
 		gap: null,
@@ -172,9 +221,11 @@ const sameSettings = (a: Settings, b: Settings): boolean =>
  */
 export function withUnit(s: Settings, unit: Unit): Settings {
 	if (unit === s.unit) return s;
-	return sameSettings(s, defaultSettings(s.unit, s.shape, s.joint))
-		? defaultSettings(unit, s.shape, s.joint)
-		: { ...s, unit };
+	const defaults = (u: Unit): Settings => ({
+		...defaultSettings(u, s.shape, s.joint),
+		pattern: s.pattern,
+	});
+	return sameSettings(s, defaults(s.unit)) ? defaults(unit) : { ...s, unit };
 }
 
 interface GeometricRange {
@@ -190,6 +241,18 @@ function geometricRange(s: Settings, param: ParamName): GeometricRange {
 	switch (param) {
 		case "edge":
 			return { ...b.edge, minLimit: "straight", maxLimit: null };
+		case "depth":
+			return {
+				...(b.depth ?? { min: 0, max: Number.POSITIVE_INFINITY }),
+				minLimit: "straight",
+				maxLimit: "length",
+			};
+		case "length":
+			return {
+				...(b.length ?? { min: 0, max: Number.POSITIVE_INFINITY }),
+				minLimit: "length",
+				maxLimit: null,
+			};
 		case "width": {
 			const radiusCap =
 				d.profile.shape === "round" &&

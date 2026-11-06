@@ -1,5 +1,5 @@
 import type { Messages } from "../i18n/fr";
-import type { Unit } from "../units/units";
+import { formatLength, type Unit } from "../units/units";
 import type { MarkDisplay } from "../viewer/model";
 import type { Viewer, ViewOptions } from "../viewer/viewer";
 import { track } from "./analytics";
@@ -78,6 +78,7 @@ export function start(): void {
 	const colors = get<HTMLInputElement>("lc-colors");
 	const marks = get<HTMLSelectElement>("lc-marks");
 	const human = get<HTMLInputElement>("lc-human");
+	const dimensions = get<HTMLInputElement>("lc-dimensions");
 	const diagonal = get<HTMLButtonElement>("lc-diagonal");
 	const print = get<HTMLButtonElement>("lc-print");
 
@@ -89,6 +90,9 @@ export function start(): void {
 		colors: colors.checked,
 		marks: marks.value as MarkDisplay,
 		human: human.checked,
+		dimensions: dimensions.checked
+			? (mm) => formatLength(mm, settings.unit, locale)
+			: null,
 	});
 
 	const plan = createPlan(() => settings, config);
@@ -130,6 +134,7 @@ export function start(): void {
 		["colors", colors],
 		["marks", marks],
 		["human", human],
+		["dimensions", dimensions],
 	] as const) {
 		input.addEventListener("change", () => {
 			refresh();
@@ -161,6 +166,7 @@ export function start(): void {
 		plan.render();
 		track("plan-print", {
 			unit: settings.unit,
+			pattern: settings.pattern,
 			profile:
 				settings.shape === "round" ? `round-${settings.joint}` : "square",
 			method: printButton ? "button" : "browser",
