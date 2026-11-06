@@ -392,7 +392,7 @@ function detailView(
 			[wx, u[1] + h],
 			"y",
 			u[0] - s * (h + 6),
-			`${round ? "Ø" : "W"} ${c.dim(width)}`,
+			`${round ? "Ø" : "□"} ${c.dim(width)}`,
 		),
 	);
 	out.push(
@@ -1286,7 +1286,7 @@ function barCard(c: Ctx, item: CutItem): Block {
 	const eLo = toPaper(epl, [eb.min[0], eb.min[1]]);
 	const eHi = toPaper(epl, [eb.max[0], eb.max[1]]);
 	const towards = (side: number) => arms.some((a) => Math.cos(a - side) > 0.5);
-	const label = `W ${c.dim(design.width)}`;
+	const label = `□ ${c.dim(design.width)}`;
 	if (!towards(Math.PI / 2))
 		end.push(
 			linear(c.std, [eLo[0], eLo[1]], [eHi[0], eLo[1]], "x", eLo[1] + 7, label),

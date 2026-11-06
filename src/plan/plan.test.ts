@@ -219,11 +219,11 @@ describe("sheet 1", () => {
 		);
 	});
 
-	it("details the doubled bars in section, with W, G and e", () => {
+	it("details the doubled bars in section, with □ (or Ø), G and e", () => {
 		const metric = planHtml(DEFAULT_DESIGNS.metric, french);
 		expect(metric).toContain(">X</text>");
 		expect(metric).toContain("Détail X, coupe (éch. 1:2)");
-		for (const label of ["W 25", "G 12,5", "e 2"])
+		for (const label of ["□ 25", "G 12,5", "e 2"])
 			expect(metric).toContain(`>${label}</text>`);
 		const elbows = planHtml(ELBOWS, english);
 		expect(elbows).toContain("Detail X, section (scale 1:2)");
