@@ -16,7 +16,7 @@ export const en: Messages = {
 	home: {
 		anchor: "generator",
 		h1: "Impossible cube generator for metal fabrication",
-		lead: "Set it to your stock, check in 3D, print the cut list.",
+		lead: "Classic cube, framed cube or coffee table: set it to your stock, check it in 3D, print the cut list.",
 		plan: {
 			title: "Plans ready for the shop floor",
 			text: "Three A4 sheets drawn to ASME Y14.5 in third-angle projection, dimensioned in fractional inches to 1/16″ or in millimeters. A 4″ check bar on every sheet confirms the print scale.",
@@ -40,7 +40,7 @@ export const en: Messages = {
 		},
 		line: {
 			title: "One line, no start, no end",
-			text: "An impossible cube, also called an infinite cube sculpture, is a single line of tube that closes on itself while tracing the edges of a cube. Seen along its long diagonal, it looks drawn in one unbroken stroke: six triangular lobes around a star. Not to be confused with the folding “infinity cube” fidget toy.",
+			text: "An impossible cube, also called an infinite cube sculpture, is a single line of tube that closes on itself while tracing the edges of a cube. Seen along its long diagonal, it looks drawn in one unbroken stroke: six triangular lobes around a star. It also comes as a framed cube, whose top and bottom are full-size frames, and as a long box for a coffee table. Not to be confused with the folding “infinity cube” fidget toy.",
 			figures: [
 				{ value: "18", label: "straight runs" },
 				{ value: "18", label: "square corners" },
@@ -53,12 +53,12 @@ export const en: Messages = {
 			title: "How to use it",
 			items: [
 				{
-					title: "Pick the stock",
-					text: "Square or round tube, in a standard size or a custom one, with its wall thickness.",
+					title: "Pick the shape and the stock",
+					text: "Classic cube, framed cube or a long box for a coffee table; then the tube, square or round, in a standard size or a custom one, with its wall thickness.",
 				},
 				{
-					title: "Set the cube",
-					text: "Its edge and the gap between bars. For round tube: weld elbows or bent tube, then the bend radius.",
+					title: "Set the size",
+					text: "The edge and the gap between bars, plus the length of a box. For round tube: weld elbows or bent tube, then the bend radius.",
 				},
 				{
 					title: "Check it in 3D",
@@ -113,6 +113,8 @@ export const en: Messages = {
 	},
 	params: {
 		edge: "Cube edge",
+		length: "Length",
+		depth: "Depth",
 		width: "Profile width",
 		gap: "Gap between bars",
 		wall: "Wall thickness",
@@ -123,18 +125,33 @@ export const en: Messages = {
 		wallTooThick: "Wall thickness cannot exceed half the width ({limit}).",
 		bendRadiusTooSmall: "Bend radius must be at least one diameter ({limit}).",
 		straightTooShort:
-			"Cube too small for this profile: a straight run would get too short. Minimum edge: {limit}.",
+			"Too small for this profile: a straight run would get too short. {param}: {limit} minimum.",
+		lengthTooShort: "Length must be at least the depth ({limit}).",
 	},
 	limits: {
 		straight: "Limit reached: the shortest straight run is down to {min}.",
 		solid:
 			"Limit reached: the wall is half the width, which makes a solid bar.",
 		radius: "Limit reached: the radius can't go below one diameter.",
+		length: "Limit reached: length equals depth.",
 	},
 	ui: {
 		settings: "Settings",
 		unit: "Units",
 		units: { mm: "mm", in: "inches" },
+		pattern: "Shape",
+		patterns: {
+			cube: "Classic cube",
+			framed: "Framed cube",
+			box: "Box (coffee table)",
+		},
+		patternHints: {
+			cube: "The original impossible cube: six identical faces.",
+			framed:
+				"Top and bottom are full-size frames, flush with the edges: ready to take a top.",
+			box: "The framed cube, stretched: set its length, depth and height, for a coffee table for instance.",
+		},
+		edge: { cube: "Cube edge", framed: "Cube edge", box: "Height" },
 		profile: "Profile",
 		shapes: { square: "Square tube", round: "Round tube" },
 		joint: "Corners",
@@ -181,7 +198,11 @@ export const en: Messages = {
 		loading: "Preparing the plans…",
 		standard: "asme",
 		file: "LoopCube - fabrication plans",
-		title: "LoopCube — Impossible cube",
+		title: {
+			cube: "LoopCube — Impossible cube",
+			framed: "LoopCube — Framed impossible cube",
+			box: "LoopCube — Impossible box",
+		},
 		subtitle: "Fabrication drawing",
 		sheets: {
 			overview: "General view",
@@ -237,7 +258,9 @@ export const en: Messages = {
 		auxiliary: "Dimensions in parentheses are reference dimensions.",
 		detail: "Detail X, section (scale {scale})",
 		elbows: "{mark}: {count} identical elbows, one at each corner.",
-		paramsLine: "A = {edge} · {section} · G = {gap}",
+		paramsLine: "{size} · {section} · G = {gap}",
+		size: "A = {edge}",
+		boxSize: "A = {edge} · B = {length} · C = {depth}",
 		radiusParam: "R = {radius}",
 		bom: {
 			mark: "Item",
@@ -254,13 +277,17 @@ export const en: Messages = {
 		},
 		notes: {
 			title: "Notes",
+			size: {
+				cube: "A: cube edge (overall size)",
+				box: "A: overall height · B: overall length · C: overall depth",
+			},
 			symbols:
-				"A: cube edge (overall size) · W: tube width or OD · G: gap between two neighboring parallel bars, measured perpendicular to a cube face · L: centerline length, corner to corner.",
+				"{size} · W: tube width or OD · G: gap between two neighboring parallel bars, measured perpendicular to a cube face · L: centerline length, corner to corner.",
 			radius: "R: bend or elbow radius, at the tube centerline.",
 			square:
 				"18 bars mitered at 45° on both ends, butt welded at the 18 corners.",
 			elbow: "18 tubes cut square and 18 90° elbows, butt welded.",
-			bent: "{count} identical bent sections, joined by {count} butt welds in the middle of the short runs.",
+			bent: "{count} flat bent sections, joined by {count} butt welds in the middle of the runs on single edges.",
 			closure:
 				"Squareness of the corners is critical: the errors of the {count} welds add up where the loop closes.",
 			closureBent:

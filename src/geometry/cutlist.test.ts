@@ -20,6 +20,7 @@ const round = (
 	gap: 13.45,
 	wall: 2.6,
 	profile: { shape: "round", joint, bendRadius },
+	pattern: { kind: "cube" },
 });
 
 const cuts = (d: Design) =>

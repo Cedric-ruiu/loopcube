@@ -7,6 +7,7 @@ import {
 	bentSections,
 	bounds,
 	buildLoop,
+	CORNER_CODES,
 	type CubeParams,
 	classifyPieces,
 	clearance,
@@ -15,9 +16,12 @@ import {
 	type Design,
 	defaultBendRadius,
 	envelopeBox,
+	extents,
+	FRAMED_CODES,
 	loopFromCorners,
 	MIN_STRAIGHT,
 	mitredBar,
+	type Pattern,
 	parts,
 	pieceEnds,
 	quantity,
@@ -30,12 +34,25 @@ import {
 import { boxGaps } from "./loop";
 import { add, cross, cyclic, dot, map3, scale, sub } from "./vec";
 
+const CUBE: Pattern = { kind: "cube" };
+const FRAMED: Pattern = { kind: "framed" };
+const BOX: Pattern = { kind: "box", length: 600, depth: 300 };
+
 const PARAM_SETS: [string, CubeParams][] = [
-	["spec example 300/25/12", { edge: 300, width: 25, gap: 12 }],
-	["metric defaults 300/25/12.5", { edge: 300, width: 25, gap: 12.5 }],
-	["large bar 500/40/5", { edge: 500, width: 40, gap: 5 }],
-	["imperial 12in/1in/0.5in", { edge: 304.8, width: 25.4, gap: 12.7 }],
-	["round tube 300/26.9/13.45", { edge: 300, width: 26.9, gap: 13.45 }],
+	["spec example 300/25/12", { edge: 300, width: 25, gap: 12, pattern: CUBE }],
+	[
+		"metric defaults 300/25/12.5",
+		{ edge: 300, width: 25, gap: 12.5, pattern: CUBE },
+	],
+	["large bar 500/40/5", { edge: 500, width: 40, gap: 5, pattern: CUBE }],
+	[
+		"imperial 12in/1in/0.5in",
+		{ edge: 304.8, width: 25.4, gap: 12.7, pattern: CUBE },
+	],
+	[
+		"round tube 300/26.9/13.45",
+		{ edge: 300, width: 26.9, gap: 13.45, pattern: CUBE },
+	],
 ];
 
 describe.each(PARAM_SETS)("loop geometry, %s", (_, p) => {
@@ -164,7 +181,9 @@ describe.each(PARAM_SETS)("loop geometry, %s", (_, p) => {
 
 describe("spec example A=300, W=25, G=12", () => {
 	it("gives 12 × 238 mm and 6 × 201 mm", () => {
-		const types = classifyPieces(buildLoop({ edge: 300, width: 25, gap: 12 }));
+		const types = classifyPieces(
+			buildLoop({ edge: 300, width: 25, gap: 12, pattern: CUBE }),
+		);
 		expect(types.map((t) => [t.segments.length, t.length])).toEqual([
 			[12, 238],
 			[3, 201],
@@ -175,7 +194,7 @@ describe("spec example A=300, W=25, G=12", () => {
 
 describe("piece classification", () => {
 	it("follows the geometry instead of fixed results: a mirrored loop swaps handedness", () => {
-		const p = { edge: 300, width: 25, gap: 12.5 };
+		const p = { edge: 300, width: 25, gap: 12.5, pattern: CUBE };
 		const mirrored = buildLoop(p).corners.map((c) =>
 			map3(c, (v, a) => (a === 0 ? -v : v)),
 		);
@@ -187,11 +206,238 @@ describe("piece classification", () => {
 	});
 });
 
+describe("framed corners (spec §2.4)", () => {
+	const cube = buildLoop({ edge: 300, width: 25, gap: 12.5, pattern: CUBE });
+	const turnsFlat = (k: number) =>
+		cyclic(cube.segments, k - 1).axis !== 1 &&
+		cyclic(cube.segments, k).axis !== 1;
+
+	it("move flush the 6 corners where the cube loop turns in the top or bottom face", () => {
+		expect(CORNER_CODES.filter((_, k) => turnsFlat(k))).toHaveLength(6);
+		CORNER_CODES.forEach((code, k) => {
+			expect(FRAMED_CODES[k]).toEqual(
+				turnsFlat(k) ? code.map(Math.sign) : code,
+			);
+		});
+	});
+});
+
+describe.each([
+	["framed cube", FRAMED],
+	["box", BOX],
+])("loop geometry, %s", (_, pattern) => {
+	const p: CubeParams = { edge: 300, width: 25, gap: 12.5, pattern };
+	const loop = buildLoop(p);
+	const { segments } = loop;
+	const size = extents(p);
+
+	it("is a closed loop of 18 bars meeting at right angles", () => {
+		expect(segments).toHaveLength(18);
+		expect(segments.at(-1)?.end).toEqual(loop.corners[0]);
+		for (const s of segments) {
+			expect(dot(s.dir, cyclic(segments, s.index + 1).dir)).toBe(0);
+		}
+	});
+
+	it("fits exactly in its envelope, B × A × A for a box", () => {
+		expect(size).toEqual(
+			pattern.kind === "box" ? [600, 300, 300] : [300, 300, 300],
+		);
+		const box = envelopeBox(loop);
+		for (const axis of [0, 1, 2] as const) {
+			expect(box.min[axis]).toBeCloseTo(-size[axis] / 2, 9);
+			expect(box.max[axis]).toBeCloseTo(size[axis] / 2, 9);
+		}
+	});
+
+	it("stacks the doubled bars of the top and bottom, the vertical ones stay corner to corner", () => {
+		const doubled = cubeEdges(loop).filter((e) => e.segments.length === 2);
+		expect(doubled).toHaveLength(6);
+		expect(cubeEdges(loop).filter((e) => e.segments.length === 1)).toHaveLength(
+			6,
+		);
+		for (const edge of doubled) {
+			const [a, b] = edge.segments.map((i) => cyclic(segments, i));
+			if (!a || !b) throw new Error("missing bar");
+			const offsets = map3(a.start, (v, axis) =>
+				axis === edge.axis ? 0 : Math.abs(v - b.start[axis]),
+			);
+			expect(offsets[1]).toBeCloseTo(edge.axis === 1 ? 0 : p.width + p.gap, 9);
+			expect(offsets.filter((o) => o > 1e-9)).toHaveLength(
+				edge.axis === 1 ? 2 : 1,
+			);
+		}
+	});
+
+	it("keeps exactly G between non-consecutive bars, in 3D as well", () => {
+		for (const shape of ["square", "round"] as const) {
+			const c = clearance(loop, shape);
+			expect(c.perAxis).toBeCloseTo(p.gap, 9);
+			expect(c.euclidean).toBeCloseTo(p.gap, 9);
+		}
+	});
+
+	it("has 4 flush bars of A − W, 12 of A − 2W − G and 2 of A − 3W − 2G, those along a box longer by B − A", () => {
+		const { long, short } = axisLengths(p);
+		const lengths = segments
+			.map((s) => s.length - (s.axis === 0 ? size[0] - p.edge : 0))
+			.sort((a, b) => b - a);
+		const expected = [
+			...Array.from({ length: 4 }, () => p.edge - p.width),
+			...Array.from({ length: 12 }, () => long),
+			short,
+			short,
+		];
+		lengths.forEach((l, i) => {
+			expect(l).toBeCloseTo(expected[i] ?? Number.NaN, 9);
+		});
+		expect(
+			segments
+				.filter((s) => Math.abs(s.length - short) < 1e-9)
+				.map((s) => s.axis),
+		).toEqual([1, 1]);
+	});
+
+	it("splits a bent loop into 6 flat sections, cut in the single bars and welded at ±90°", () => {
+		const ends = pieceEnds(loop);
+		const sections = bentSections(loop);
+		expect(sections).toHaveLength(6);
+		const singles = cubeEdges(loop)
+			.filter((e) => e.segments.length === 1)
+			.flatMap((e) => e.segments);
+		for (const { segments: run } of sections) {
+			expect(singles).toContain(run[0]);
+			const points = run.slice(1).map((i) => cyclic(loop.corners, i));
+			const [o = [0, 0, 0], a = o, b = o] = points;
+			const normal = cross(sub(a, o), sub(b, o));
+			for (const q of points) expect(dot(sub(q, o), normal)).toBeCloseTo(0, 6);
+			expect(Math.abs(cyclic(ends, run[0] ?? 0).twist)).toBe(90);
+		}
+	});
+});
+
+describe("framed cube parts", () => {
+	const framed: Design = { ...DEFAULT_DESIGNS.metric, pattern: FRAMED };
+
+	it("classifies the mitred bars into 4 + 8 + 2 + 2 + 1 + 1 computed types", () => {
+		const types = classifyPieces(buildLoop(framed));
+		expect(types.map((t) => [t.segments.length, t.length, t.twist])).toEqual([
+			[4, 275, 0],
+			[8, 237.5, 0],
+			[2, 237.5, 90],
+			[2, 237.5, -90],
+			[1, 200, 90],
+			[1, 200, -90],
+		]);
+	});
+});
+
+describe("box length and depth", () => {
+	const box: Design = { ...DEFAULT_DESIGNS.metric, pattern: BOX };
+	const sized = (length: number, depth: number): Design => ({
+		...box,
+		pattern: { kind: "box", length, depth },
+	});
+
+	it("keeps the depth up to the length, and the length from the depth", () => {
+		expect(bounds(box).depth).toEqual({ min: 97.5, max: 600 });
+		expect(bounds(box).length).toEqual({
+			min: 300,
+			max: Number.POSITIVE_INFINITY,
+		});
+		expect(bounds(DEFAULT_DESIGNS.metric).length).toBeUndefined();
+		expect(bounds(DEFAULT_DESIGNS.metric).depth).toBeUndefined();
+		expect(bounds(box).edge).toEqual({
+			min: bounds(DEFAULT_DESIGNS.metric).edge.min,
+			max: Number.POSITIVE_INFINITY,
+		});
+	});
+
+	it("sets the height apart from the depth", () => {
+		expect(validate({ ...box, edge: 900 })).toEqual([]);
+		expect(validate({ ...sized(1200, 600), edge: 400 })).toEqual([]);
+		expect(extents(sized(1200, 600))).toEqual([1200, 300, 600]);
+	});
+
+	it("rejects a box shorter than deep", () => {
+		expect(validate(sized(600, 600))).toEqual([]);
+		expect(validate(sized(600, 601))).toEqual([
+			{ code: "lengthTooShort", param: "length", limit: 601 },
+		]);
+		expect(validate(sized(0, 300))).toEqual([
+			{ code: "notPositive", param: "length" },
+		]);
+		expect(validate(sized(600, 0))).toEqual([
+			{ code: "notPositive", param: "depth" },
+		]);
+	});
+
+	it("stops a shallow box where the bars across its depth get too short", () => {
+		// C − 2W − G − W ≥ MIN_STRAIGHT
+		expect(validate(sized(600, 97.5))).toEqual([]);
+		expect(validate(sized(600, 97))).toEqual([
+			{ code: "straightTooShort", param: "depth", limit: 97.5 },
+		]);
+		expect(bounds(sized(600, 112.5)).gap.max).toBe(27.5);
+		expect(bounds(sized(600, 112.5)).width.max).toBe(30);
+	});
+});
+
+describe.each([
+	["square", DEFAULT_DESIGNS.metric.profile],
+	["with elbows", { shape: "round", joint: "elbow", bendRadius: 40 }],
+	["bent", { shape: "round", joint: "bent", bendRadius: 40 }],
+] as const)("low deep box, %s", (_, profile) => {
+	const d: Design = {
+		...DEFAULT_DESIGNS.metric,
+		edge: 250,
+		profile,
+		pattern: { kind: "box", length: 900, depth: 450 },
+	};
+	const loop = buildLoop(d);
+
+	it("fits exactly in its envelope, B × A × C", () => {
+		const envelope = envelopeBox(loop);
+		const size = [900, 250, 450];
+		for (const axis of [0, 1, 2] as const) {
+			expect(envelope.min[axis]).toBeCloseTo(-(size[axis] ?? 0) / 2, 9);
+			expect(envelope.max[axis]).toBeCloseTo((size[axis] ?? 0) / 2, 9);
+		}
+		for (const shape of ["square", "round"] as const) {
+			expect(clearance(loop, shape).perAxis).toBeCloseTo(d.gap, 9);
+		}
+	});
+
+	it("validates every bound of its sliders", () => {
+		const b = bounds(d);
+		for (const [param, range] of Object.entries(b)) {
+			if (!Number.isFinite(range.max) || param === "wall") continue;
+			const at = (v: number): Design =>
+				param === "depth" || param === "length"
+					? {
+							...d,
+							pattern: { ...d.pattern, [param]: v } as Design["pattern"],
+						}
+					: param === "bendRadius"
+						? {
+								...d,
+								profile: { ...d.profile, bendRadius: v } as Design["profile"],
+							}
+						: { ...d, [param]: v };
+			if (range.min > 0) {
+				expect(validate(at(range.min)), `${param} min`).toEqual([]);
+			}
+			expect(validate(at(range.max)), `${param} max`).toEqual([]);
+		}
+	});
+});
+
 const ROUND_ELBOW: Design = {
 	edge: 300,
 	width: 26.9,
 	gap: 13.45,
 	wall: 2.6,
+	pattern: CUBE,
 	profile: {
 		shape: "round",
 		joint: "elbow",
@@ -211,6 +457,9 @@ const DESIGNS: [string, Design][] = [
 	["imperial square", DEFAULT_DESIGNS.imperial],
 	["round tube with elbows", ROUND_ELBOW],
 	["bent round tube", ROUND_BENT],
+	["framed square", { ...DEFAULT_DESIGNS.metric, pattern: FRAMED }],
+	["bent framed", { ...ROUND_BENT, pattern: FRAMED }],
+	["box with elbows", { ...ROUND_ELBOW, pattern: BOX }],
 ];
 const withRadius = (d: Design, bendRadius: number): Design =>
 	d.profile.shape === "round"
@@ -390,6 +639,16 @@ describe.each([
 	["small gap", { ...ROUND_ELBOW, gap: 5 }, defaultBendRadius(26.9)],
 	["widest elbows", ROUND_ELBOW, maxRadius(ROUND_ELBOW)],
 	["widest bends of a bent tube", ROUND_BENT, maxRadius(ROUND_BENT)],
+	[
+		"widest bends of a bent framed cube",
+		{ ...ROUND_BENT, pattern: FRAMED },
+		maxRadius(ROUND_BENT),
+	],
+	[
+		"box with tight elbows, small gap",
+		{ ...ROUND_ELBOW, gap: 5, pattern: BOX },
+		ROUND_ELBOW.width,
+	],
 	[
 		"large cube, small gap, wide bends",
 		{ ...ROUND_ELBOW, edge: 600, gap: 2 },

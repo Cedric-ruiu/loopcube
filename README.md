@@ -8,6 +8,7 @@ LoopCube is a free, open source generator of **impossible cubes**, also called i
 
 ## Features
 
+- Three shapes: the classic cube, a framed cube (full-size top and bottom frames), and a box with its own length, depth and height, e.g. for a coffee table.
 - Square tube with mitered corners, or round tube with weld elbows or bent sections.
 - Standard stock sizes (EN 10219, NPS) or custom ones; cube edge, gap between bars, wall thickness, bend radius.
 - Live 3D preview: rotate, zoom, diagonal view for the endless-line illusion, parts colored by type, part marks.

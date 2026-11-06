@@ -25,6 +25,7 @@ const config: ClientConfig = {
 	},
 };
 const units = Object.entries(m.ui.units);
+const patterns = Object.entries(m.ui.patterns);
 const shapes = Object.entries(m.ui.shapes);
 const joints = Object.entries(m.ui.joints);
 ---
@@ -74,6 +75,14 @@ const joints = Object.entries(m.ui.joints);
 			</fieldset>
 		</div>
 
+		<div class="field">
+			<label for="lc-pattern">{m.ui.pattern}</label>
+			<select id="lc-pattern" aria-describedby="lc-pattern-hint" autocomplete="off">
+				{patterns.map(([value, label]) => <option value={value} selected={value === "cube"}>{label}</option>)}
+			</select>
+			<p class="msg" id="lc-pattern-hint" aria-live="polite">{m.ui.patternHints.cube}</p>
+		</div>
+
 		<fieldset class="choice">
 			<legend>{m.ui.profile}</legend>
 			<div class="seg">
@@ -112,7 +121,12 @@ const joints = Object.entries(m.ui.joints);
 							<p class="msg" id="lc-joint-hint" aria-live="polite" />
 						</fieldset>
 					)}
-					<div class="field" data-round={p === "bendRadius" ? "" : undefined} hidden={p === "bendRadius"}>
+					<div
+						class="field"
+						data-round={p === "bendRadius" ? "" : undefined}
+						data-box={p === "length" || p === "depth" ? "" : undefined}
+						hidden={p === "bendRadius" || p === "length" || p === "depth"}
+					>
 						<div class="field-head">
 							<label for={`lc-${p}`} id={`lc-${p}-label`}>
 								{p === "width" ? m.ui.width.square : m.params[p]}

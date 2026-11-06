@@ -17,6 +17,21 @@ const ROUND: Design = {
 	gap: 13.45,
 	wall: 2.6,
 	profile: { shape: "round", joint: "elbow", bendRadius: 40.35 },
+	pattern: { kind: "cube" },
+};
+const FRAMED: Design = {
+	...DEFAULT_DESIGNS.metric,
+	pattern: { kind: "framed" },
+};
+const BOX: Design = {
+	...DEFAULT_DESIGNS.metric,
+	edge: 400,
+	pattern: { kind: "box", length: 1100, depth: 500 },
+};
+const BENT_FRAMED: Design = {
+	...ROUND,
+	profile: { shape: "round", joint: "bent", bendRadius: 40.35 },
+	pattern: { kind: "framed" },
 };
 const DESIGNS: [string, Design][] = [
 	["square", DEFAULT_DESIGNS.metric],
@@ -28,6 +43,10 @@ const DESIGNS: [string, Design][] = [
 			profile: { shape: "round", joint: "bent", bendRadius: 40.35 },
 		},
 	],
+	["framed square", FRAMED],
+	["square box", BOX],
+	["bent framed", BENT_FRAMED],
+	["box with elbows", { ...ROUND, edge: 400, pattern: BOX.pattern }],
 ];
 const LANGUAGES = [
 	["fr", fr],
@@ -174,6 +193,9 @@ describe("sheet 1", () => {
 		["elbows, fr", ELBOWS, french],
 		["elbows, en", ELBOWS, english],
 		["bent", BENT, french],
+		["framed, fr", FRAMED, french],
+		["box, en", BOX, english],
+		["bent framed", BENT_FRAMED, french],
 	] as const)(
 		"ends every leader in its piece, crossing no other (%s)",
 		(_, design, context) => {
@@ -241,6 +263,56 @@ describe("sheet 1", () => {
 		expect(planHtml(DEFAULT_DESIGNS.imperial, english)).toContain(
 			"Diagonal view (not to scale)",
 		);
+	});
+});
+
+describe("framed cube and box", () => {
+	const french = { locale: "fr", unit: "mm", messages: fr, date } as const;
+	const english = { locale: "en", unit: "in", messages: en, date } as const;
+
+	it("name the shape in the title block, and the length of a box", () => {
+		expect(planHtml(FRAMED, french)).toContain(
+			"<b>LoopCube — Cube infini encadré</b>",
+		);
+		const box = planHtml(BOX, french);
+		expect(box).toContain("<b>LoopCube — Pavé infini</b>");
+		expect(box).toContain(
+			"A = 400\u00a0mm · B = 1\u202f100\u00a0mm · C = 500\u00a0mm · Tube carré",
+		);
+		expect(box).toContain("B\u00a0: longueur hors tout");
+		expect(box).toContain("C\u00a0: profondeur hors tout");
+		expect(planHtml(BOX, english)).toContain(
+			"<b>LoopCube — Impossible box</b>",
+		);
+	});
+
+	it("dimension the length, the height and the depth of a box in its views", () => {
+		const box = planHtml(BOX, french);
+		// Front and top views, plus the flush bars cut tip to tip at B or C
+		expect(count(box, />1100<\/text>/g)).toBe(3);
+		// Front and side views
+		expect(count(box, />400<\/text>/g)).toBe(2);
+		// Top and side views, plus the flush bars
+		expect(count(box, />500<\/text>/g)).toBe(3);
+	});
+
+	it("weld each bent section to the one before it in the loop", () => {
+		const html = planHtml(BENT_FRAMED, french);
+		const sections = parts(BENT_FRAMED);
+		expect(sections.map((p) => [p.id, p.marks.length])).toEqual([
+			["A", 4],
+			["B", 2],
+		]);
+		for (const weld of [
+			"B2 → A1",
+			"A1 → A2",
+			"A2 → B1",
+			"B1 → A3",
+			"A3 → A4",
+			"A4 → B2",
+		])
+			expect(html).toContain(`<td>${weld}</td>`);
+		expect(html).toContain("6 sections cintrées planes");
 	});
 });
 

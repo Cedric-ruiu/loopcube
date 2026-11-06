@@ -1,3 +1,4 @@
+import type { PatternKind } from "../geometry";
 import type { Unit } from "../units/units";
 
 // Umami custom events. The tracker script is loaded with `defer` from the
@@ -21,6 +22,7 @@ interface Events {
 	/** From the plan button or the browser's own print command */
 	"plan-print": {
 		unit: Unit;
+		pattern: PatternKind;
 		profile: "square" | "round-elbow" | "round-bent";
 		method: "button" | "browser";
 	};

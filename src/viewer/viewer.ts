@@ -11,7 +11,7 @@ import {
 } from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { CSS2DRenderer } from "three/addons/renderers/CSS2DRenderer.js";
-import type { Design } from "../geometry";
+import { type Design, extents, type Vec3 } from "../geometry";
 import { buildHuman, faceTowards, humanReach, standBeside } from "./human";
 import { buildModel, type Model, type ModelStyle } from "./model";
 import { EDGE, METAL, partColor, WELD } from "./palette";
@@ -25,7 +25,6 @@ export interface Viewer {
 	diagonalView(): void;
 }
 
-const DIAGONAL = new Vector3(1, 1, 1).normalize();
 const START = new Vector3(0.55, 0.75, 1).normalize();
 /** Half the visible size on the short side of the view, in radii of the framed sphere */
 const FRAME = 1.2;
@@ -106,7 +105,9 @@ export async function createViewer(
 		if (!pending) pending = requestAnimationFrame(draw);
 	};
 
-	/** Radius of the sphere framed at zoom 1: the cube's */
+	/** Outer size of the object along X, Y and Z */
+	let size: Vec3 = [0, 0, 0];
+	/** Radius of the sphere framed at zoom 1: the object's */
 	let radius = 0;
 	/** Radius of the sphere that holds the cube, and the figure when shown */
 	let reach = 0;
@@ -128,11 +129,11 @@ export async function createViewer(
 		camera.updateProjectionMatrix();
 	};
 
-	const frame = (edge: number, withHuman: boolean) => {
-		const cube = (edge * Math.sqrt(3)) / 2;
-		const all = withHuman ? Math.max(cube, humanReach(human)) : cube;
-		if (cube === radius && all === reach) return;
-		radius = cube;
+	const frame = (withHuman: boolean) => {
+		const body = Math.hypot(...size) / 2;
+		const all = withHuman ? Math.max(body, humanReach(human)) : body;
+		if (body === radius && all === reach) return;
+		radius = body;
 		reach = all;
 		controls.minZoom = Math.min(MIN_ZOOM, radius / reach);
 		camera.zoom = Math.max(camera.zoom, controls.minZoom);
@@ -149,8 +150,9 @@ export async function createViewer(
 		model = buildModel(design, options, materials);
 		scene.add(model.group);
 		human.visible = options.human;
-		standBeside(human, design.edge);
-		frame(design.edge, options.human);
+		size = extents(design);
+		standBeside(human, size);
+		frame(options.human);
 	};
 
 	await nextTask();
@@ -174,9 +176,11 @@ export async function createViewer(
 		diagonalView() {
 			const from = camera.position.clone();
 			const zoom = camera.zoom;
+			// Through the corners where the doubled edges meet
+			const diagonal = new Vector3(...size).normalize();
 			const turn = new Quaternion().setFromUnitVectors(
 				from.clone().normalize(),
-				DIAGONAL,
+				diagonal,
 			);
 			const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
 			const duration = reduced ? 0 : TRANSITION_MS;

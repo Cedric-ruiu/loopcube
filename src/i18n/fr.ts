@@ -1,5 +1,10 @@
 import type { Limit } from "../app/settings";
-import type { IssueCode, ParamName, ProfileShape } from "../geometry";
+import type {
+	IssueCode,
+	ParamName,
+	PatternKind,
+	ProfileShape,
+} from "../geometry";
 import type { Unit } from "../units/units";
 import type { MarkDisplay } from "../viewer/model";
 import { frenchSpacing } from "./typography";
@@ -20,7 +25,7 @@ export const fr = frenchSpacing({
 	home: {
 		anchor: "generateur",
 		h1: "Générateur de cube infini en métal",
-		lead: "Réglez-le sur votre profilé, vérifiez-le en 3D, imprimez son plan de débit.",
+		lead: "Cube classique, cube encadré ou table basse : réglez-le sur votre profilé, vérifiez-le en 3D, imprimez son plan de débit.",
 		plan: {
 			title: "Un plan qui suffit à l'atelier",
 			text: "Trois feuilles A4 dessinées selon l'ISO 128, en projection du 1er dièdre, cotées en millimètres ou en pouces au 1/16. Une barre témoin de 100 mm, sur chaque feuille, vérifie l'échelle à l'impression.",
@@ -44,7 +49,7 @@ export const fr = frenchSpacing({
 		},
 		line: {
 			title: "Une ligne sans début ni fin",
-			text: "Le cube infini, aussi appelé cube impossible, est une sculpture faite d'une seule ligne de tube qui se referme sur elle-même en dessinant les arêtes d'un cube. Vu dans l'axe de sa grande diagonale, il semble tracé d'un trait continu : six lobes triangulaires autour d'une étoile.",
+			text: "Le cube infini, aussi appelé cube impossible, est une sculpture faite d'une seule ligne de tube qui se referme sur elle-même en dessinant les arêtes d'un cube. Vu dans l'axe de sa grande diagonale, il semble tracé d'un trait continu : six lobes triangulaires autour d'une étoile. Il se décline aussi en cube encadré, dont le dessus et le dessous sont des cadres pleine taille, et en pavé allongé pour une table basse.",
 			figures: [
 				{ value: "18", label: "tronçons droits" },
 				{ value: "18", label: "angles à 90°" },
@@ -57,12 +62,12 @@ export const fr = frenchSpacing({
 			title: "Comment s'en servir",
 			items: [
 				{
-					title: "Choisir le profilé",
-					text: "Tube carré ou rond, en section du commerce ou sur mesure, avec son épaisseur de paroi.",
+					title: "Choisir la forme et le profilé",
+					text: "Cube classique, cube encadré ou pavé pour une table basse ; puis le tube, carré ou rond, en section du commerce ou sur mesure, avec son épaisseur de paroi.",
 				},
 				{
-					title: "Régler le cube",
-					text: "L'arête et le jeu entre barres. En tube rond : coudes à souder ou tube cintré, puis le rayon de jonction.",
+					title: "Régler les dimensions",
+					text: "L'arête et le jeu entre barres, plus la longueur d'un pavé. En tube rond : coudes à souder ou tube cintré, puis le rayon de jonction.",
 				},
 				{
 					title: "Vérifier en 3D",
@@ -117,6 +122,8 @@ export const fr = frenchSpacing({
 	},
 	params: {
 		edge: "Arête du cube",
+		length: "Longueur",
+		depth: "Profondeur",
 		width: "Largeur du profilé",
 		gap: "Jeu entre barres",
 		wall: "Épaisseur de paroi",
@@ -129,7 +136,9 @@ export const fr = frenchSpacing({
 		bendRadiusTooSmall:
 			"Le rayon de jonction doit être d'au moins un diamètre ({limit}).",
 		straightTooShort:
-			"Cube trop petit pour ce profilé : une partie droite deviendrait trop courte. Arête minimale : {limit}.",
+			"Trop petit pour ce profilé : une partie droite deviendrait trop courte. {param} : {limit} minimum.",
+		lengthTooShort:
+			"La longueur doit être au moins égale à la profondeur ({limit}).",
 	} satisfies Record<IssueCode, string>,
 	limits: {
 		straight:
@@ -137,11 +146,29 @@ export const fr = frenchSpacing({
 		solid:
 			"Limite atteinte : l'épaisseur vaut la moitié de la largeur, c'est une barre pleine.",
 		radius: "Limite atteinte : le rayon ne descend pas sous un diamètre.",
+		length: "Limite atteinte : la longueur égale la profondeur.",
 	} satisfies Record<Limit, string>,
 	ui: {
 		settings: "Réglages",
 		unit: "Unité",
 		units: { mm: "mm", in: "pouces" } satisfies Record<Unit, string>,
+		pattern: "Forme",
+		patterns: {
+			cube: "Cube classique",
+			framed: "Cube encadré",
+			box: "Pavé (table basse)",
+		} satisfies Record<PatternKind, string>,
+		patternHints: {
+			cube: "Le cube infini d'origine : six faces identiques.",
+			framed:
+				"Dessus et dessous en cadres pleine taille, au ras des arêtes : de quoi y poser un plateau.",
+			box: "Le cube encadré, allongé : réglez sa longueur, sa profondeur et sa hauteur, pour une table basse par exemple.",
+		} satisfies Record<PatternKind, string>,
+		edge: {
+			cube: "Arête du cube",
+			framed: "Arête du cube",
+			box: "Hauteur",
+		} satisfies Record<PatternKind, string>,
 		profile: "Profilé",
 		shapes: { square: "Tube carré", round: "Tube rond" } satisfies Record<
 			ProfileShape,
@@ -203,7 +230,11 @@ export const fr = frenchSpacing({
 		/** Drawing conventions of the language: ISO 128, first angle */
 		standard: "iso" as "iso" | "asme",
 		file: "LoopCube - plan de fabrication",
-		title: "LoopCube — Cube infini",
+		title: {
+			cube: "LoopCube — Cube infini",
+			framed: "LoopCube — Cube infini encadré",
+			box: "LoopCube — Pavé infini",
+		} satisfies Record<PatternKind, string>,
 		subtitle: "Plan de fabrication",
 		sheets: {
 			overview: "Vue d'ensemble",
@@ -257,7 +288,9 @@ export const fr = frenchSpacing({
 			"Cotes entre parenthèses : cotes auxiliaires, données pour information.",
 		detail: "Détail X, coupe (éch. {scale})",
 		elbows: "{mark} : {count} coudes identiques, un à chaque angle.",
-		paramsLine: "A = {edge} · {section} · G = {gap}",
+		paramsLine: "{size} · {section} · G = {gap}",
+		size: "A = {edge}",
+		boxSize: "A = {edge} · B = {length} · C = {depth}",
 		radiusParam: "R = {radius}",
 		bom: {
 			mark: "Rep.",
@@ -274,14 +307,18 @@ export const fr = frenchSpacing({
 		},
 		notes: {
 			title: "Notes",
+			size: {
+				cube: "A : arête du cube (encombrement)",
+				box: "A : hauteur hors tout · B : longueur hors tout · C : profondeur hors tout",
+			},
 			symbols:
-				"A : arête du cube (encombrement) · W : largeur ou Ø du profilé · G : jeu entre deux barres parallèles voisines, mesuré perpendiculairement à une face du cube · L : longueur à l'axe, d'angle à angle.",
+				"{size} · W : largeur ou Ø du profilé · G : jeu entre deux barres parallèles voisines, mesuré perpendiculairement à une face du cube · L : longueur à l'axe, d'angle à angle.",
 			radius: "R : rayon de cintrage ou de coude, à l'axe du tube.",
 			square:
 				"18 barres coupées d'onglet à 45° aux deux bouts, soudées bout à bout aux 18 angles.",
 			elbow:
 				"18 tubes coupés d'équerre et 18 coudes à 90°, soudés bout à bout.",
-			bent: "{count} sections cintrées identiques, raboutées par {count} soudures bout à bout au milieu des tronçons courts.",
+			bent: "{count} sections cintrées planes, raboutées par {count} soudures bout à bout au milieu des tronçons des arêtes simples.",
 			closure:
 				"Équerrage des angles critique : les écarts des {count} soudures se cumulent à la fermeture de la boucle.",
 			closureBent:

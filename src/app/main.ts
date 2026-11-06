@@ -161,6 +161,7 @@ export function start(): void {
 		plan.render();
 		track("plan-print", {
 			unit: settings.unit,
+			pattern: settings.pattern,
 			profile:
 				settings.shape === "round" ? `round-${settings.joint}` : "square",
 			method: printButton ? "button" : "browser",
