@@ -1,11 +1,20 @@
-/** Okabe–Ito colours, told apart with the common colour vision deficiencies. */
-const PART_COLORS = [
+/**
+ * One colour per part type (a box has up to 11), ordered so that the first
+ * ones differ the most, and still apart once shaded by the 3D lighting.
+ */
+export const PART_COLORS = [
+	"#42d4f4",
+	"#be0032",
+	"#f3c300",
+	"#117733",
+	"#604e97",
+	"#ff7f0e",
+	"#e68fac",
 	"#0072b2",
-	"#e69f00",
-	"#009e73",
-	"#cc79a7",
-	"#56b4e9",
-	"#d55e00",
+	"#f032e6",
+	"#44aa99",
+	"#8db600",
+	"#8c564b",
 ] as const;
 
 export const METAL = "#b4bac2";
